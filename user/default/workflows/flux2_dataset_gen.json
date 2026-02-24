@@ -1,0 +1,429 @@
+{
+  "id": "flux2-dataset-gen",
+  "revision": 1,
+  "last_node_id": 302,
+  "last_link_id": 24,
+  "nodes": [
+    {
+      "id": 100,
+      "type": "LoadImage",
+      "pos": [-1800, -200],
+      "size": [315, 314],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "slot_index": 0, "links": [11, 18]},
+        {"name": "MASK", "type": "MASK", "slot_index": 1, "links": null}
+      ],
+      "title": "Reference Image",
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["source.png", "image"],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 101,
+      "type": "ImageScaleToTotalPixels",
+      "pos": [-1500, -200],
+      "size": [315, 82],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {"name": "image", "type": "IMAGE", "link": 11}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "slot_index": 0, "links": [12]}
+      ],
+      "title": "Scale to 1MP",
+      "properties": {"Node name for S&R": "ImageScaleToTotalPixels"},
+      "widgets_values": ["lanczos", 1]
+    },
+    {
+      "id": 4,
+      "type": "UNETLoader",
+      "pos": [-1200, -200],
+      "size": [315, 82],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "slot_index": 0, "links": [1]}
+      ],
+      "title": "Flux 2 Dev",
+      "properties": {"Node name for S&R": "UNETLoader"},
+      "widgets_values": ["flux2-dev.safetensors", "default"],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 10,
+      "type": "CLIPLoader",
+      "pos": [-1200, -50],
+      "size": [315, 110],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "CLIP", "type": "CLIP", "slot_index": 0, "links": [3, 4]}
+      ],
+      "title": "Mistral CLIP",
+      "properties": {"Node name for S&R": "CLIPLoader"},
+      "widgets_values": ["mistral_3_small_flux2_fp8.safetensors", "flux2", "default"],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 11,
+      "type": "VAELoader",
+      "pos": [-1200, 120],
+      "size": [315, 58],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "VAE", "type": "VAE", "slot_index": 0, "links": [8, 13]}
+      ],
+      "title": "Flux 2 VAE",
+      "properties": {"Node name for S&R": "VAELoader"},
+      "widgets_values": ["flux2-ae.safetensors"],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 12,
+      "type": "PulidFluxModelLoader",
+      "pos": [-1200, 250],
+      "size": [315, 58],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "PULID_FLUX", "type": "PULIDFLUX", "slot_index": 0, "links": [15]}
+      ],
+      "title": "PuLID Model",
+      "properties": {"Node name for S&R": "PulidFluxModelLoader"},
+      "widgets_values": ["pulid_flux_v0.9.1.safetensors"],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 13,
+      "type": "PulidFluxInsightFaceLoader",
+      "pos": [-1200, 380],
+      "size": [315, 58],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "FACEANALYSIS", "type": "FACEANALYSIS", "slot_index": 0, "links": [16]}
+      ],
+      "title": "InsightFace",
+      "properties": {"Node name for S&R": "PulidFluxInsightFaceLoader"},
+      "widgets_values": ["CUDA"],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 19,
+      "type": "PulidFluxEvaClipLoader",
+      "pos": [-1200, 480],
+      "size": [315, 58],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "EVA_CLIP", "type": "EVA_CLIP", "slot_index": 0, "links": [17]}
+      ],
+      "title": "EVA CLIP",
+      "properties": {"Node name for S&R": "PulidFluxEvaClipLoader"},
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 200,
+      "type": "CR Prompt List",
+      "pos": [-1800, -600],
+      "size": [500, 400],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {"name": "prepend_text", "type": "STRING", "widget": {"name": "prepend_text"}, "link": null},
+        {"name": "multiline_text", "type": "STRING", "widget": {"name": "multiline_text"}, "link": null},
+        {"name": "append_text", "type": "STRING", "widget": {"name": "append_text"}, "link": null},
+        {"name": "start_index", "type": "INT", "widget": {"name": "start_index"}, "link": null},
+        {"name": "max_rows", "type": "INT", "widget": {"name": "max_rows"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "prompt", "type": "STRING", "slot_index": 0, "shape": 6, "links": [19, 20]},
+        {"name": "body_text", "type": "STRING", "slot_index": 1, "shape": 6, "links": null},
+        {"name": "show_help", "type": "STRING", "slot_index": 2, "links": null}
+      ],
+      "title": "Portrait Prompts",
+      "properties": {"Node name for S&R": "CR Prompt List"},
+      "widgets_values": [
+        "",
+        "Photorealistic profile view of the subject's face from the left, against a plain white wall background.\nHyperrealistic profile view of the subject's face from the right, against a clean white wall.\nDSLR photograph, three-quarter view of the subject's face, looking towards the camera, against a plain white wall.\nUltra-realistic three-quarter view of the subject, looking slightly away from the camera, against a seamless white wall.\nLow-angle shot, looking up at the subject's face with a neutral expression, against a plain white wall.\nHigh-angle shot, looking down at the subject's face, against a stark white wall.\nPhotorealistic headshot with the subject's head tilted slightly to the side, looking directly at the camera, against a white wall.\nHyperrealistic shot of the subject looking over their shoulder at the camera, against a white wall background.\nDramatic Rembrandt lighting portrait, with one side of the subject's face illuminated, from a three-quarter angle against a white wall.\nExtreme close-up shot from a slight angle, focusing on the subject's facial features, against a white wall.\nPhotorealistic headshot with a slight Dutch angle, where the camera is tilted, against a plain white wall background.\nDSLR photo of the subject looking up and away, past the camera, in a three-quarter turn against a white wall.\nUltra-realistic shot of the subject looking down and to the side, with their face angled away from the camera, against a white wall.\nHyperrealistic shot from behind the subject, as they turn their head to the side to look towards the camera, against a white wall.\nPhotorealistic portrait from a 45-degree angle, showing the face and shoulders, against a seamless white wall.\nMacro shot from a three-quarter perspective, with a shallow depth of field focusing sharply on the subject's eyes, against a white wall.\nWorm's-eye view looking directly up at the subject's chin and face, against a plain white wall.\nBird's-eye view looking directly down on the top of the subject's head as they look up towards the camera, against a white wall.\nPhotorealistic shot of the subject with their head tilted back, exposing the neck and looking upwards, against a white wall.\nRealistic headshot with the subject's chin tucked down, looking up at the camera from under their brow, against a white wall.",
+        "",
+        0,
+        1000
+      ]
+    },
+    {
+      "id": 103,
+      "type": "VAEEncode",
+      "pos": [-400, -550],
+      "size": [210, 46],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {"name": "pixels", "type": "IMAGE", "link": 12},
+        {"name": "vae", "type": "VAE", "link": 13}
+      ],
+      "outputs": [
+        {"name": "LATENT", "type": "LATENT", "slot_index": 0, "links": [14]}
+      ],
+      "title": "Encode Reference",
+      "properties": {"Node name for S&R": "VAEEncode"},
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "ApplyPulidFlux",
+      "pos": [-800, -200],
+      "size": [315, 200],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 1},
+        {"name": "pulid_flux", "type": "PULIDFLUX", "link": 15},
+        {"name": "eva_clip", "type": "EVA_CLIP", "link": 17},
+        {"name": "face_analysis", "type": "FACEANALYSIS", "link": 16},
+        {"name": "image", "type": "IMAGE", "link": 18}
+      ],
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "slot_index": 0, "links": [2]}
+      ],
+      "title": "Apply PuLID",
+      "properties": {"Node name for S&R": "ApplyPulidFlux"},
+      "widgets_values": [0.8, 0.0, 0.8]
+    },
+    {
+      "id": 6,
+      "type": "CLIPTextEncode",
+      "pos": [-800, 100],
+      "size": [400, 200],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {"name": "clip", "type": "CLIP", "link": 3},
+        {"name": "text", "type": "STRING", "widget": {"name": "text"}, "link": 19}
+      ],
+      "outputs": [
+        {"name": "CONDITIONING", "type": "CONDITIONING", "slot_index": 0, "links": [5]}
+      ],
+      "title": "Positive Prompt",
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": [""],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 7,
+      "type": "CLIPTextEncode",
+      "pos": [-800, 350],
+      "size": [400, 200],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {"name": "clip", "type": "CLIP", "link": 4}
+      ],
+      "outputs": [
+        {"name": "CONDITIONING", "type": "CONDITIONING", "slot_index": 0, "links": [7]}
+      ],
+      "title": "Negative Prompt",
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": [""],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 20,
+      "type": "FluxGuidance",
+      "pos": [-330, 100],
+      "size": [317, 58],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {"name": "conditioning", "type": "CONDITIONING", "link": 5}
+      ],
+      "outputs": [
+        {"name": "CONDITIONING", "type": "CONDITIONING", "slot_index": 0, "links": [6]}
+      ],
+      "title": "Guidance",
+      "properties": {"Node name for S&R": "FluxGuidance"},
+      "widgets_values": [3.0]
+    },
+    {
+      "id": 3,
+      "type": "KSampler",
+      "pos": [50, -300],
+      "size": [315, 474],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 2},
+        {"name": "positive", "type": "CONDITIONING", "link": 6},
+        {"name": "negative", "type": "CONDITIONING", "link": 7},
+        {"name": "latent_image", "type": "LATENT", "link": 14}
+      ],
+      "outputs": [
+        {"name": "LATENT", "type": "LATENT", "slot_index": 0, "links": [10]}
+      ],
+      "title": "Sampler",
+      "properties": {"Node name for S&R": "KSampler"},
+      "widgets_values": [0, "randomize", 28, 1, "euler", "beta", 0.75]
+    },
+    {
+      "id": 8,
+      "type": "VAEDecode",
+      "pos": [430, -200],
+      "size": [210, 46],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {"name": "samples", "type": "LATENT", "link": 10},
+        {"name": "vae", "type": "VAE", "link": 8}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "slot_index": 0, "links": [21]}
+      ],
+      "title": "Decode",
+      "properties": {"Node name for S&R": "VAEDecode"},
+      "widgets_values": []
+    },
+    {
+      "id": 16,
+      "type": "FaceRestoreModelLoader",
+      "pos": [430, 200],
+      "size": [315, 58],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "FACERESTORE_MODEL", "type": "FACERESTORE_MODEL", "slot_index": 0, "links": [22]}
+      ],
+      "title": "CodeFormer",
+      "properties": {"Node name for S&R": "FaceRestoreModelLoader"},
+      "widgets_values": ["codeformer.pth"],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 15,
+      "type": "FaceRestoreCFWithModel",
+      "pos": [750, -200],
+      "size": [315, 130],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {"name": "facerestore_model", "type": "FACERESTORE_MODEL", "link": 22},
+        {"name": "image", "type": "IMAGE", "link": 21}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "slot_index": 0, "links": [23, 24]}
+      ],
+      "title": "Face Restore",
+      "properties": {"Node name for S&R": "FaceRestoreCFWithModel"},
+      "widgets_values": ["retinaface_resnet50", 0.8]
+    },
+    {
+      "id": 9,
+      "type": "SaveImageKJ",
+      "pos": [1100, -200],
+      "size": [500, 450],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 23},
+        {"name": "caption", "type": "STRING", "shape": 7, "link": 20}
+      ],
+      "outputs": [
+        {"name": "filename", "type": "STRING", "links": null}
+      ],
+      "title": "Save + Caption",
+      "properties": {"Node name for S&R": "SaveImageKJ"},
+      "widgets_values": ["flux2_dataset", "output", ".txt"]
+    },
+    {
+      "id": 302,
+      "type": "PreviewImage",
+      "pos": [1100, 200],
+      "size": [400, 350],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 24}
+      ],
+      "outputs": [],
+      "title": "Preview",
+      "properties": {"Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    }
+  ],
+  "links": [
+    [1, 4, 0, 14, 0, "MODEL"],
+    [2, 14, 0, 3, 0, "MODEL"],
+    [3, 10, 0, 6, 0, "CLIP"],
+    [4, 10, 0, 7, 0, "CLIP"],
+    [5, 6, 0, 20, 0, "CONDITIONING"],
+    [6, 20, 0, 3, 1, "CONDITIONING"],
+    [7, 7, 0, 3, 2, "CONDITIONING"],
+    [8, 11, 0, 8, 1, "VAE"],
+    [10, 3, 0, 8, 0, "LATENT"],
+    [11, 100, 0, 101, 0, "IMAGE"],
+    [12, 101, 0, 103, 0, "IMAGE"],
+    [13, 11, 0, 103, 1, "VAE"],
+    [14, 103, 0, 3, 3, "LATENT"],
+    [15, 12, 0, 14, 1, "PULIDFLUX"],
+    [16, 13, 0, 14, 3, "FACEANALYSIS"],
+    [17, 19, 0, 14, 2, "EVA_CLIP"],
+    [18, 100, 0, 14, 4, "IMAGE"],
+    [19, 200, 0, 6, 1, "STRING"],
+    [20, 200, 0, 9, 1, "STRING"],
+    [21, 8, 0, 15, 1, "IMAGE"],
+    [22, 16, 0, 15, 0, "FACERESTORE_MODEL"],
+    [23, 15, 0, 9, 0, "IMAGE"],
+    [24, 15, 0, 302, 0, "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.7,
+      "offset": [1500, 700]
+    }
+  },
+  "version": 0.4
+}
