@@ -215,7 +215,14 @@ echo -e "  ${HLINE}"
 echo ""
 
 # ── Model Manager ────────────────────────────────────────────
-python scripts/model_manager.py
+python scripts/model_manager.py || {
+    rc=$?
+    if [[ $rc -eq 130 ]]; then
+        echo -e "  ${YELLOW}Model selection cancelled.${RST}"
+    else
+        warn "Model manager exited with code $rc"
+    fi
+}
 
 echo -e "  ${HLINE}"
 echo ""
