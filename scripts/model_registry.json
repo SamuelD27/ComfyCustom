@@ -1,0 +1,197 @@
+{
+  "config": {
+    "civitai_api_key": "68b35c5249f706b2fdf33a96314628ff",
+    "hf_download_flags": ["--max-workers", "32"],
+    "hf_env": {
+      "HF_HUB_ENABLE_HF_TRANSFER": "1",
+      "HF_XET_HIGH_PERFORMANCE": "1",
+      "HF_XET_NUM_CONCURRENT_RANGE_GETS": "128"
+    },
+    "aria2c_flags": [
+      "--max-connection-per-server=16",
+      "--split=16",
+      "--min-split-size=1M",
+      "--max-concurrent-downloads=4",
+      "--prefer-family=IPv4",
+      "--max-tries=10",
+      "--retry-wait=3",
+      "--continue=true",
+      "--file-allocation=falloc"
+    ],
+    "always_keep": {
+      "ai_toolkit_loras": {
+        "source": "/home/samsam/ai-toolkit/output",
+        "description": "LoRAs trained with AI Toolkit -- never cleaned up"
+      }
+    }
+  },
+  "pipelines": {
+    "flux2-dev": {
+      "display_name": "Flux 2 Dev",
+      "total_size_gb": 66,
+      "models": [
+        {
+          "filename": "flux2-dev.safetensors",
+          "dest_subdir": "diffusion_models",
+          "size_gb": 61,
+          "source": "hf",
+          "hf_repo": "black-forest-labs/FLUX.2-dev",
+          "hf_file": "flux2-dev.safetensors"
+        },
+        {
+          "filename": "clip_l.safetensors",
+          "dest_subdir": "text_encoders",
+          "size_gb": 0.23,
+          "source": "hf",
+          "hf_repo": "comfyanonymous/flux_text_encoders",
+          "hf_file": "clip_l.safetensors"
+        },
+        {
+          "filename": "t5xxl_fp8_e4m3fn.safetensors",
+          "dest_subdir": "text_encoders",
+          "size_gb": 4.6,
+          "source": "hf",
+          "hf_repo": "comfyanonymous/flux_text_encoders",
+          "hf_file": "t5xxl_fp8_e4m3fn.safetensors"
+        },
+        {
+          "filename": "flux2-ae.safetensors",
+          "dest_subdir": "vae",
+          "size_gb": 0.32,
+          "source": "hf",
+          "hf_repo": "black-forest-labs/FLUX.2-dev",
+          "hf_file": "ae.safetensors",
+          "rename_from": "ae.safetensors"
+        }
+      ],
+      "loras": [
+        {
+          "filename": "f2k_consist_20260225.safetensors",
+          "display_name": "Consistance Edit",
+          "size_gb": 0.545,
+          "source": "hf",
+          "hf_repo": "lrzjason/Consistance_Edit_Lora",
+          "hf_file": "f2k_consist_20260225.safetensors"
+        },
+        {
+          "filename": "nicegirls-flux2.safetensors",
+          "display_name": "NiceGirls Flux2",
+          "size_gb": 0.372,
+          "source": "civitai",
+          "civitai_url": "https://civitai.com/api/download/models/2511539"
+        }
+      ]
+    },
+    "flux2-klein": {
+      "display_name": "Flux 2 Klein 9B",
+      "total_size_gb": 33,
+      "models": [
+        {
+          "filename": "flux2-klein-base-9b.safetensors",
+          "dest_subdir": "diffusion_models",
+          "size_gb": 17,
+          "source": "hf",
+          "hf_repo": "black-forest-labs/FLUX.2-klein-9B",
+          "hf_file": "flux-2-klein-9b.safetensors",
+          "rename_from": "flux-2-klein-9b.safetensors"
+        },
+        {
+          "filename": "qwen_3_8b.safetensors",
+          "dest_subdir": "text_encoders",
+          "size_gb": 16,
+          "source": "hf",
+          "hf_repo": "Comfy-Org/vae-text-encorder-for-flux-klein-9b",
+          "hf_file": "split_files/text_encoders/qwen_3_8b.safetensors"
+        },
+        {
+          "filename": "flux2-ae.safetensors",
+          "dest_subdir": "vae",
+          "size_gb": 0.32,
+          "source": "hf",
+          "hf_repo": "black-forest-labs/FLUX.2-dev",
+          "hf_file": "ae.safetensors",
+          "rename_from": "ae.safetensors"
+        }
+      ],
+      "loras": [
+        {
+          "filename": "flux2-klein-smartphone-snapshot-v12.safetensors",
+          "display_name": "Smartphone Snapshot v12",
+          "size_gb": 0.041,
+          "source": "civitai",
+          "civitai_url": "https://civitai.com/api/download/models/2832437"
+        },
+        {
+          "filename": "nicegirls-ultrareal-klein9b.safetensors",
+          "display_name": "NiceGirls UltraReal Klein",
+          "size_gb": 0.316,
+          "source": "civitai",
+          "civitai_url": "https://civitai.com/api/download/models/2682864"
+        }
+      ]
+    },
+    "qwen-image-edit-2511": {
+      "display_name": "Qwen Image Edit 2511",
+      "total_size_gb": 48,
+      "models": [
+        {
+          "filename": "qwen_image_edit_2511_bf16.safetensors",
+          "dest_subdir": "diffusion_models",
+          "size_gb": 39,
+          "source": "hf",
+          "hf_repo": "Qwen/Qwen-Image-2512",
+          "hf_file": "qwen_image_edit_2511_bf16.safetensors"
+        },
+        {
+          "filename": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+          "dest_subdir": "text_encoders",
+          "size_gb": 8.8,
+          "source": "hf",
+          "hf_repo": "Comfy-Org/z_image",
+          "hf_file": "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors"
+        },
+        {
+          "filename": "qwen_image_vae.safetensors",
+          "dest_subdir": "vae",
+          "size_gb": 0.24,
+          "source": "hf",
+          "hf_repo": "Comfy-Org/z_image",
+          "hf_file": "split_files/vae/qwen_image_vae.safetensors"
+        }
+      ],
+      "loras": [
+        {
+          "filename": "Qwen-Image-Edit-2511-Lightning-8steps-V1.0-fp32.safetensors",
+          "display_name": "Lightning 8-step 2511",
+          "size_gb": 1.62,
+          "source": "hf",
+          "hf_repo": "lightx2v/Qwen-Image-Lightning",
+          "hf_file": "Qwen-Image-Edit-2511/Qwen-Image-Edit-2511-Lightning-8steps-V1.0-fp32.safetensors"
+        },
+        {
+          "filename": "Qwen-Image-Edit-2509-Lightning-8steps-V1.0-fp32.safetensors",
+          "display_name": "Lightning 8-step 2509",
+          "size_gb": 1.62,
+          "source": "hf",
+          "hf_repo": "lightx2v/Qwen-Image-Lightning",
+          "hf_file": "Qwen-Image-Edit-2509/Qwen-Image-Edit-2509-Lightning-8steps-V1.0-fp32.safetensors"
+        },
+        {
+          "filename": "Qwen-Image-Lightning-4steps-V1.0.safetensors",
+          "display_name": "Lightning 4-step Gen",
+          "size_gb": 1.62,
+          "source": "hf",
+          "hf_repo": "lightx2v/Qwen-Image-Lightning",
+          "hf_file": "Qwen-Image-Lightning-4steps-V1.0.safetensors"
+        },
+        {
+          "filename": "nicegirls-qwen2512.safetensors",
+          "display_name": "NiceGirls Qwen2512",
+          "size_gb": 0.563,
+          "source": "civitai",
+          "civitai_url": "https://civitai.com/api/download/models/2792919"
+        }
+      ]
+    }
+  }
+}
