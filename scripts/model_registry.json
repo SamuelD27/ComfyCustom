@@ -60,8 +60,7 @@
           "size_gb": 0.32,
           "source": "hf",
           "hf_repo": "black-forest-labs/FLUX.2-dev",
-          "hf_file": "ae.safetensors",
-          "rename_from": "ae.safetensors"
+          "hf_file": "ae.safetensors"
         }
       ],
       "loras": [
@@ -92,8 +91,7 @@
           "size_gb": 17,
           "source": "hf",
           "hf_repo": "black-forest-labs/FLUX.2-klein-9B",
-          "hf_file": "flux-2-klein-9b.safetensors",
-          "rename_from": "flux-2-klein-9b.safetensors"
+          "hf_file": "flux-2-klein-9b.safetensors"
         },
         {
           "filename": "qwen_3_8b.safetensors",
@@ -109,8 +107,7 @@
           "size_gb": 0.32,
           "source": "hf",
           "hf_repo": "black-forest-labs/FLUX.2-dev",
-          "hf_file": "ae.safetensors",
-          "rename_from": "ae.safetensors"
+          "hf_file": "ae.safetensors"
         }
       ],
       "loras": [

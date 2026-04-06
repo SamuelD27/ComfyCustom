@@ -150,8 +150,7 @@ def select_pipelines(registry: dict) -> list[str]:
         items.append((key, label))
 
     if _gum_available():
-        # Build gum choose args
-        labels = [f"{key}|{label}" for key, label in items]
+        labels = [label for _, label in items]
         try:
             result = subprocess.run(
                 ["gum", "choose", "--no-limit", "--header", "Select pipelines to download:"]
@@ -160,8 +159,10 @@ def select_pipelines(registry: dict) -> list[str]:
                 text=True,
                 check=True,
             )
-            selected_labels = result.stdout.strip().split("\n")
-            return [s.split("|")[0] for s in selected_labels if s.strip()]
+            selected_labels = [s.strip() for s in result.stdout.strip().split("\n") if s.strip()]
+            # Match selected labels back to keys
+            label_to_key = {label: key for key, label in items}
+            return [label_to_key[sl] for sl in selected_labels if sl in label_to_key]
         except (subprocess.CalledProcessError, FileNotFoundError):
             pass  # fall through to manual
 
@@ -199,7 +200,7 @@ def select_loras(pipeline_key: str, pipeline_data: dict) -> list[dict]:
     display_name = pipeline_data["display_name"]
 
     if _gum_available():
-        labels = [f"{i}|{label}" for i, (_, label) in enumerate(items)]
+        labels = [label for _, label in items]
         try:
             result = subprocess.run(
                 [
@@ -214,14 +215,9 @@ def select_loras(pipeline_key: str, pipeline_data: dict) -> list[dict]:
                 text=True,
                 check=True,
             )
-            selected_labels = result.stdout.strip().split("\n")
-            selected_indices = []
-            for s in selected_labels:
-                if s.strip():
-                    idx_str = s.split("|")[0]
-                    if idx_str.isdigit():
-                        selected_indices.append(int(idx_str))
-            return [items[i][0] for i in selected_indices if i < len(items)]
+            selected_labels = {s.strip() for s in result.stdout.strip().split("\n") if s.strip()}
+            # Match selected labels back to LoRA dicts
+            return [lora for lora, label in items if label in selected_labels]
         except (subprocess.CalledProcessError, FileNotFoundError):
             pass
 
@@ -497,17 +493,20 @@ def download_pipeline(
                 else:
                     dest_dir = MODELS_DIR / "loras"
 
-                path = download_model_file(item, dest_dir, registry)
-                created_files.append(
-                    {
-                        "path": str(path),
-                        "filename": item["filename"],
-                        "pipeline": pipeline_key,
-                        "is_symlink": path.is_symlink(),
-                        "hf_repo": item.get("hf_repo"),
-                        "source": item.get("source", "hf"),
-                    }
-                )
+                try:
+                    path = download_model_file(item, dest_dir, registry)
+                    created_files.append(
+                        {
+                            "path": str(path),
+                            "filename": item["filename"],
+                            "pipeline": pipeline_key,
+                            "is_symlink": path.is_symlink(),
+                            "hf_repo": item.get("hf_repo"),
+                            "source": item.get("source", "hf"),
+                        }
+                    )
+                except Exception as e:
+                    log.error(f"{RED}FAILED{RST}  {item['filename']}: {e}")
                 progress.advance(task)
     else:
         # Fallback: simple text progress
@@ -521,17 +520,20 @@ def download_pipeline(
             else:
                 dest_dir = MODELS_DIR / "loras"
 
-            path = download_model_file(item, dest_dir, registry)
-            created_files.append(
-                {
-                    "path": str(path),
-                    "filename": item["filename"],
-                    "pipeline": pipeline_key,
-                    "is_symlink": path.is_symlink(),
-                    "hf_repo": item.get("hf_repo"),
-                    "source": item.get("source", "hf"),
-                }
-            )
+            try:
+                path = download_model_file(item, dest_dir, registry)
+                created_files.append(
+                    {
+                        "path": str(path),
+                        "filename": item["filename"],
+                        "pipeline": pipeline_key,
+                        "is_symlink": path.is_symlink(),
+                        "hf_repo": item.get("hf_repo"),
+                        "source": item.get("source", "hf"),
+                    }
+                )
+            except Exception as e:
+                log.error(f"{RED}FAILED{RST}  {item['filename']}: {e}")
 
     return created_files
 
