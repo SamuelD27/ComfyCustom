@@ -447,13 +447,14 @@ def build_dataset_gen():
 
 
 def build_final_gen():
-    """Build the Z-Image Base final generation workflow.
+    """Build the Z-Image Base i2i final generation workflow.
 
-    4-stage pipeline:
-      Stage 1: Base generation (Z-Image + identity LoRA)
+    Image-to-image pipeline with multiple reference inputs:
+      Reference: 3 LoadImage slots (primary sets composition, 2 optional)
+      Stage 1: i2i generation (Z-Image + identity LoRA, denoise 0.65)
       Stage 2: Face refinement (SAM3 + inpaint crop/stitch)
-      Stage 3: Face restoration (CodeFormer, optional/muted)
-      Stage 4: Upscale (4x, optional/muted)
+      Stage 3: Face restoration (CodeFormer, optional/bypassed)
+      Stage 4: Upscale (4x, optional/bypassed)
     """
 
     nodes_def = [
@@ -544,12 +545,89 @@ def build_final_gen():
             ],
         },
 
+        # -- Reference Images (i2i inputs) --
+        {
+            "id": 50,
+            "type": "LoadImage",
+            "title": "Reference 1 (Primary — sets composition)",
+            "pos": [550, 100],
+            "size": [315, 314],
+            "inputs": [],
+            "outputs": [
+                ("IMAGE", "IMAGE"),
+                ("MASK", "MASK"),
+            ],
+            "widgets_values": ["example.png", "image"],
+        },
+        {
+            "id": 51,
+            "type": "LoadImage",
+            "title": "Reference 2 (optional)",
+            "pos": [550, 470],
+            "size": [315, 314],
+            "mode": 4,  # BYPASSED by default
+            "inputs": [],
+            "outputs": [
+                ("IMAGE", "IMAGE"),
+                ("MASK", "MASK"),
+            ],
+            "widgets_values": ["example.png", "image"],
+        },
+        {
+            "id": 52,
+            "type": "LoadImage",
+            "title": "Reference 3 (optional)",
+            "pos": [550, 840],
+            "size": [315, 314],
+            "mode": 4,  # BYPASSED by default
+            "inputs": [],
+            "outputs": [
+                ("IMAGE", "IMAGE"),
+                ("MASK", "MASK"),
+            ],
+            "widgets_values": ["example.png", "image"],
+        },
+
+        # -- Scale + Encode primary reference --
+        {
+            "id": 53,
+            "type": "ImageScaleToTotalPixels",
+            "title": "Scale to Target Resolution",
+            "pos": [950, 100],
+            "size": [315, 82],
+            "inputs": [
+                ("image", "IMAGE"),
+            ],
+            "outputs": [
+                ("IMAGE", "IMAGE"),
+            ],
+            "widgets_values": [
+                "bilinear",     # upscale_method
+                1.0,            # megapixels (1MP = ~1024x1024)
+            ],
+        },
+        {
+            "id": 54,
+            "type": "VAEEncode",
+            "title": "Encode Reference to Latent",
+            "pos": [950, 270],
+            "size": [210, 46],
+            "inputs": [
+                ("pixels", "IMAGE"),
+                ("vae", "VAE"),
+            ],
+            "outputs": [
+                ("LATENT", "LATENT"),
+            ],
+            "widgets_values": [],
+        },
+
         # -- Prompts --
         {
             "id": 10,
             "type": "CLIPTextEncode",
             "title": "Positive Prompt",
-            "pos": [550, 100],
+            "pos": [950, 400],
             "size": [400, 200],
             "inputs": [
                 ("clip", "CLIP"),
@@ -565,7 +643,7 @@ def build_final_gen():
             "id": 11,
             "type": "CLIPTextEncode",
             "title": "Negative Prompt",
-            "pos": [550, 350],
+            "pos": [950, 650],
             "size": [400, 200],
             "inputs": [
                 ("clip", "CLIP"),
@@ -579,31 +657,12 @@ def build_final_gen():
             ],
         },
 
-        # -- Latent --
-        {
-            "id": 12,
-            "type": "EmptyZImageLatentImage //ZImagePowerNodes",
-            "title": "Empty Z-Image Latent",
-            "pos": [550, 600],
-            "size": [315, 130],
-            "inputs": [],
-            "outputs": [
-                ("LATENT", "LATENT"),
-            ],
-            "widgets_values": [
-                False,                      # landscape
-                "3:2  (photo)",             # ratio
-                "medium (recommended)",     # size
-                1,                          # batch_size
-            ],
-        },
-
-        # -- Base Sampler --
+        # -- Base Sampler (i2i with denoise < 1.0) --
         {
             "id": 15,
             "type": "KSampler",
-            "title": "Base Sampler",
-            "pos": [1050, 100],
+            "title": "Base Sampler (i2i)",
+            "pos": [1450, 100],
             "size": [315, 262],
             "inputs": [
                 ("model", "MODEL"),
@@ -621,7 +680,7 @@ def build_final_gen():
                 4.0,                    # cfg
                 "euler",                # sampler_name
                 "linear_quadratic",     # scheduler
-                1.0,                    # denoise
+                0.65,                   # denoise (i2i: preserve reference structure)
             ],
         },
 
@@ -630,7 +689,7 @@ def build_final_gen():
             "id": 16,
             "type": "VAEDecode",
             "title": "VAE Decode (Base)",
-            "pos": [1050, 450],
+            "pos": [1450, 450],
             "size": [210, 46],
             "inputs": [
                 ("samples", "LATENT"),
@@ -936,7 +995,6 @@ def build_final_gen():
     # ---------------------------------------------------------------
     links_def = [
         # --- Stage 1: Model chain ---
-        # UNETLoader -> ModelSamplingAuraFlow -> IdentityLoRA -> StyleLoRA(muted) -> Base KSampler
         (1, 0, 2, 0, "MODEL"),      # UNETLoader -> ModelSampling model
         (2, 0, 3, 0, "MODEL"),      # ModelSampling -> Identity LoRA model
         (3, 0, 4, 0, "MODEL"),      # Identity LoRA -> Style LoRA model
@@ -946,6 +1004,12 @@ def build_final_gen():
         (5, 0, 10, 0, "CLIP"),      # CLIPLoader -> Positive prompt clip
         (5, 0, 11, 0, "CLIP"),      # CLIPLoader -> Negative prompt clip
 
+        # --- Reference image pipeline ---
+        # Primary reference -> scale -> encode -> latent for i2i
+        (50, 0, 53, 0, "IMAGE"),    # Reference 1 -> ImageScale
+        (53, 0, 54, 0, "IMAGE"),    # Scaled image -> VAEEncode pixels
+        (6, 0, 54, 1, "VAE"),       # VAE -> VAEEncode vae
+
         # VAE to base decode
         (6, 0, 16, 1, "VAE"),       # VAELoader -> Base VAEDecode vae
 
@@ -953,8 +1017,8 @@ def build_final_gen():
         (10, 0, 15, 1, "CONDITIONING"),  # Positive -> Base KSampler positive
         (11, 0, 15, 2, "CONDITIONING"),  # Negative -> Base KSampler negative
 
-        # Latent to base sampler
-        (12, 0, 15, 3, "LATENT"),   # EmptyLatent -> Base KSampler latent_image
+        # Encoded reference latent to base sampler (i2i)
+        (54, 0, 15, 3, "LATENT"),   # VAEEncode latent -> Base KSampler latent_image
 
         # Base sampler to decode
         (15, 0, 16, 0, "LATENT"),   # Base KSampler -> Base VAEDecode samples
@@ -1010,8 +1074,13 @@ def build_final_gen():
     # ---------------------------------------------------------------
     groups_def = [
         {
-            "title": "Stage 1: Base Generation",
-            "bounding": [60, 50, 1350, 780],
+            "title": "Reference Images",
+            "bounding": [510, 50, 400, 1150],
+            "color": "#533",
+        },
+        {
+            "title": "Stage 1: i2i Generation",
+            "bounding": [910, 50, 950, 850],
             "color": "#363",
         },
         {
