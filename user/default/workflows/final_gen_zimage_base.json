@@ -935,7 +935,7 @@
       ],
       "flags": {},
       "order": 20,
-      "mode": 2,
+      "mode": 4,
       "inputs": [
         {
           "name": "facerestore_model",
@@ -1013,7 +1013,7 @@
       ],
       "flags": {},
       "order": 22,
-      "mode": 2,
+      "mode": 4,
       "inputs": [
         {
           "name": "upscale_model",

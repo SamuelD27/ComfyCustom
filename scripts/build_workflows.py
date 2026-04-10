@@ -850,7 +850,7 @@ def build_final_gen():
             "title": "CodeFormer Restore",
             "pos": [2700, 250],
             "size": [315, 150],
-            "mode": 2,  # MUTED
+            "mode": 4,  # BYPASSED (passes IMAGE through)
             "inputs": [
                 ("facerestore_model", "FACERESTORE_MODEL"),
                 ("image", "IMAGE"),
@@ -888,7 +888,7 @@ def build_final_gen():
             "title": "4x Upscale",
             "pos": [3100, 250],
             "size": [315, 82],
-            "mode": 2,  # MUTED
+            "mode": 4,  # BYPASSED (passes IMAGE through)
             "inputs": [
                 ("upscale_model", "UPSCALE_MODEL"),
                 ("image", "IMAGE"),
@@ -1048,8 +1048,8 @@ def main():
     print(f"Nodes: {len(wf_dataset['nodes'])}")
     print(f"Links: {len(wf_dataset['links'])}")
     for n in wf_dataset["nodes"]:
-        mode = " (MUTED)" if n.get("mode") == 2 else ""
-        print(f"  {n['id']}: {n['type']}{mode} - {n.get('title', '')}")
+        mode_label = {2: " (MUTED)", 4: " (BYPASSED)"}.get(n.get("mode", 0), "")
+        print(f"  {n['id']}: {n['type']}{mode_label} - {n.get('title', '')}")
 
     # Final generation workflow
     wf_final = build_final_gen()
@@ -1060,8 +1060,8 @@ def main():
     print(f"Nodes: {len(wf_final['nodes'])}")
     print(f"Links: {len(wf_final['links'])}")
     for n in wf_final["nodes"]:
-        mode = " (MUTED)" if n.get("mode") == 2 else ""
-        print(f"  {n['id']}: {n['type']}{mode} - {n.get('title', '')}")
+        mode_label = {2: " (MUTED)", 4: " (BYPASSED)"}.get(n.get("mode", 0), "")
+        print(f"  {n['id']}: {n['type']}{mode_label} - {n.get('title', '')}")
 
 
 if __name__ == "__main__":
