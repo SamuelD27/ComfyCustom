@@ -1,0 +1,85 @@
+# Caption Blocklist — Identity Descriptors
+# Lines starting with # are comments. Each non-comment line is one term to strip
+# from training captions so that identity features bind to the trigger word.
+
+# Facial structure
+oval face
+round face
+square face
+heart-shaped face
+angular jaw
+strong jaw
+soft jaw
+high cheekbones
+prominent cheekbones
+chiseled features
+delicate features
+
+# Eyes
+brown eyes
+blue eyes
+green eyes
+hazel eyes
+dark eyes
+light eyes
+almond-shaped eyes
+round eyes
+narrow eyes
+wide-set eyes
+close-set eyes
+deep-set eyes
+hooded eyes
+
+# Skin
+fair skin
+pale skin
+light skin
+dark skin
+olive skin
+tan skin
+tanned
+dark complexion
+light complexion
+medium complexion
+porcelain skin
+ebony skin
+freckled skin
+clear skin
+
+# Nose
+small nose
+large nose
+button nose
+aquiline nose
+straight nose
+broad nose
+narrow nose
+upturned nose
+
+# Lips
+full lips
+thin lips
+wide lips
+small mouth
+large mouth
+
+# Ethnicity / race
+caucasian
+asian
+african
+european
+hispanic
+latin
+middle eastern
+south asian
+east asian
+
+# Body type
+slender build
+athletic build
+curvy figure
+petite frame
+tall stature
+short stature
+muscular build
+thin frame
