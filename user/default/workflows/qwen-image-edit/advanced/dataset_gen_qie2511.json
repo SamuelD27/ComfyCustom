@@ -49,7 +49,7 @@
       ],
       "flags": {},
       "order": 1,
-      "mode": 2,
+      "mode": 4,
       "inputs": [
         {
           "name": "model",
@@ -107,7 +107,7 @@
       },
       "widgets_values": [
         "qwen_2.5_vl_7b_fp8_scaled.safetensors",
-        "qwen2_5_vl"
+        "qwen_image"
       ],
       "title": "Load Qwen2.5-VL Text Encoder"
     },
@@ -238,7 +238,7 @@
     },
     {
       "id": 8,
-      "type": "PrimitiveNode",
+      "type": "CR Text",
       "pos": [
         550,
         550
@@ -253,16 +253,22 @@
       "inputs": [],
       "outputs": [
         {
-          "name": "STRING",
-          "type": "STRING",
+          "name": "*",
+          "type": "*",
           "slot_index": 0,
           "links": [
             15
           ]
+        },
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "slot_index": 1,
+          "links": null
         }
       ],
       "properties": {
-        "Node name for S&R": "PrimitiveNode"
+        "Node name for S&R": "CR Text"
       },
       "widgets_values": [
         "ohwx person"
@@ -377,11 +383,12 @@
         "Node name for S&R": "TextEncodeQwenImageEditPlus_lrzjason"
       },
       "widgets_values": [
+        "",
         true,
         true,
         false,
         "bicubic",
-        "center",
+        "disabled",
         "Describe the key features of the input image (facial structure, body proportions, skin tone, distinctive features), then explain how the user's text instruction modifies the scene while preserving the person's identity. Generate a new image that matches the user's requirements while maintaining complete facial and body consistency with the original input."
       ],
       "title": "QIE2511 Encode (Identity)"

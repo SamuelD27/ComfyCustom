@@ -57,7 +57,7 @@ def build_dataset_gen():
             "title": "Lightning LoRA (Muted)",
             "pos": [100, 250],
             "size": [315, 82],
-            "mode": 2,  # MUTED / bypassed
+            "mode": 4,  # BYPASSED — passes MODEL through when disabled
             "inputs": [
                 ("model", "MODEL"),
             ],
@@ -77,7 +77,7 @@ def build_dataset_gen():
             "outputs": [("CLIP", "CLIP")],
             "widgets_values": [
                 "qwen_2.5_vl_7b_fp8_scaled.safetensors",
-                "qwen2_5_vl",
+                "qwen_image",
             ],
         },
         {
@@ -133,12 +133,12 @@ def build_dataset_gen():
         },
         {
             "id": 8,
-            "type": "PrimitiveNode",
+            "type": "CR Text",
             "title": "Trigger Word",
             "pos": [550, 550],
             "size": [315, 82],
             "inputs": [],
-            "outputs": [("STRING", "STRING")],
+            "outputs": [("*", "*"), ("STRING", "STRING")],
             "widgets_values": ["ohwx person"],
         },
 
@@ -169,11 +169,12 @@ def build_dataset_gen():
                 ("latent", "LATENT"),               # slot 6
             ],
             "widgets_values": [
+                "",         # prompt (placeholder — overridden by link)
                 True,       # enable_resize
                 True,       # enable_vl_resize
                 False,      # skip_first_image_resize
                 "bicubic",  # upscale_method
-                "center",   # crop
+                "disabled", # crop
                 QIE_INSTRUCTION,  # instruction
             ],
         },
