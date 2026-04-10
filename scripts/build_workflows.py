@@ -295,7 +295,7 @@ def build_dataset_gen():
             ],
             "widgets_values": [
                 "joycaption-beta-one",       # model
-                "Balanced (8-bit)",          # quantization
+                "Full Precision (bf16)",     # quantization (no bitsandbytes — GB10 incompatible)
                 "Straightforward",           # prompt_style / caption_type
                 "medium",                    # caption_length
                 512,                         # max_new_tokens

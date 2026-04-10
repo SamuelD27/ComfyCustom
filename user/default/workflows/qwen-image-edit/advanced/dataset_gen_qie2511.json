@@ -643,7 +643,7 @@
       },
       "widgets_values": [
         "joycaption-beta-one",
-        "Balanced (8-bit)",
+        "Full Precision (bf16)",
         "Straightforward",
         "medium",
         512,
