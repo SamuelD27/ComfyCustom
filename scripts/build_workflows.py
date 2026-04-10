@@ -445,16 +445,623 @@ def build_dataset_gen():
     return make_workflow(nodes_def, links_def, groups_def)
 
 
-def main():
-    wf = build_dataset_gen()
-    out_path = PROJECT_ROOT / "user/default/workflows/dataset_gen_qie2511.json"
-    save_workflow(wf, out_path)
+def build_final_gen():
+    """Build the Z-Image Base final generation workflow.
 
-    # Summary
-    print(f"Nodes: {len(wf['nodes'])}")
-    print(f"Links: {len(wf['links'])}")
-    for n in wf["nodes"]:
-        print(f"  {n['id']}: {n['type']} - {n.get('title', '')}")
+    4-stage pipeline:
+      Stage 1: Base generation (Z-Image + identity LoRA)
+      Stage 2: Face refinement (SAM3 + inpaint crop/stitch)
+      Stage 3: Face restoration (CodeFormer, optional/muted)
+      Stage 4: Upscale (4x, optional/muted)
+    """
+
+    nodes_def = [
+        # =================================================================
+        # STAGE 1: Base Generation
+        # =================================================================
+
+        # -- Model Loaders --
+        {
+            "id": 1,
+            "type": "UNETLoader",
+            "title": "Load Z-Image Diffusion Model",
+            "pos": [100, 100],
+            "size": [315, 82],
+            "inputs": [],
+            "outputs": [("MODEL", "MODEL")],
+            "widgets_values": [
+                "z_image_bf16.safetensors",
+                "default",
+            ],
+        },
+        {
+            "id": 2,
+            "type": "ModelSamplingAuraFlow",
+            "title": "Model Sampling (shift=3.0)",
+            "pos": [100, 250],
+            "size": [315, 82],
+            "inputs": [
+                ("model", "MODEL"),
+            ],
+            "outputs": [("MODEL", "MODEL")],
+            "widgets_values": [3.0],
+        },
+        {
+            "id": 3,
+            "type": "LoraLoaderModelOnly",
+            "title": "Identity LoRA",
+            "pos": [100, 400],
+            "size": [315, 82],
+            "inputs": [
+                ("model", "MODEL"),
+            ],
+            "outputs": [("MODEL", "MODEL")],
+            "widgets_values": [
+                "identity_lora.safetensors",
+                0.80,
+            ],
+        },
+        {
+            "id": 4,
+            "type": "LoraLoaderModelOnly",
+            "title": "Style LoRA (optional)",
+            "pos": [100, 550],
+            "size": [315, 82],
+            "mode": 2,  # MUTED
+            "inputs": [
+                ("model", "MODEL"),
+            ],
+            "outputs": [("MODEL", "MODEL")],
+            "widgets_values": [
+                "style_lora.safetensors",
+                1.0,
+            ],
+        },
+        {
+            "id": 5,
+            "type": "CLIPLoader",
+            "title": "Load Qwen3-4B Text Encoder",
+            "pos": [100, 700],
+            "size": [315, 82],
+            "inputs": [],
+            "outputs": [("CLIP", "CLIP")],
+            "widgets_values": [
+                "qwen_3_4b.safetensors",
+                "lumina2",
+            ],
+        },
+        {
+            "id": 6,
+            "type": "VAELoader",
+            "title": "Load Z-Image VAE",
+            "pos": [100, 850],
+            "size": [315, 82],
+            "inputs": [],
+            "outputs": [("VAE", "VAE")],
+            "widgets_values": [
+                "z_image_ae.safetensors",
+            ],
+        },
+
+        # -- Prompts --
+        {
+            "id": 10,
+            "type": "CLIPTextEncode",
+            "title": "Positive Prompt",
+            "pos": [550, 100],
+            "size": [400, 200],
+            "inputs": [
+                ("clip", "CLIP"),
+            ],
+            "outputs": [
+                ("CONDITIONING", "CONDITIONING"),
+            ],
+            "widgets_values": [
+                "ohwx person, a photorealistic portrait photograph",
+            ],
+        },
+        {
+            "id": 11,
+            "type": "CLIPTextEncode",
+            "title": "Negative Prompt",
+            "pos": [550, 350],
+            "size": [400, 200],
+            "inputs": [
+                ("clip", "CLIP"),
+            ],
+            "outputs": [
+                ("CONDITIONING", "CONDITIONING"),
+            ],
+            "widgets_values": [
+                "blurry, deformed, distorted face, extra fingers, "
+                "bad anatomy, watermark, text, low quality",
+            ],
+        },
+
+        # -- Latent --
+        {
+            "id": 12,
+            "type": "EmptyZImageLatentImage //ZImagePowerNodes",
+            "title": "Empty Z-Image Latent",
+            "pos": [550, 600],
+            "size": [315, 130],
+            "inputs": [],
+            "outputs": [
+                ("LATENT", "LATENT"),
+            ],
+            "widgets_values": [
+                False,                      # landscape
+                "3:2  (photo)",             # ratio
+                "medium (recommended)",     # size
+                1,                          # batch_size
+            ],
+        },
+
+        # -- Base Sampler --
+        {
+            "id": 15,
+            "type": "KSampler",
+            "title": "Base Sampler",
+            "pos": [1050, 100],
+            "size": [315, 262],
+            "inputs": [
+                ("model", "MODEL"),
+                ("positive", "CONDITIONING"),
+                ("negative", "CONDITIONING"),
+                ("latent_image", "LATENT"),
+            ],
+            "outputs": [
+                ("LATENT", "LATENT"),
+            ],
+            "widgets_values": [
+                0,                      # seed
+                "randomize",            # seed control
+                25,                     # steps
+                4.0,                    # cfg
+                "euler",                # sampler_name
+                "linear_quadratic",     # scheduler
+                1.0,                    # denoise
+            ],
+        },
+
+        # -- Base Decode --
+        {
+            "id": 16,
+            "type": "VAEDecode",
+            "title": "VAE Decode (Base)",
+            "pos": [1050, 450],
+            "size": [210, 46],
+            "inputs": [
+                ("samples", "LATENT"),
+                ("vae", "VAE"),
+            ],
+            "outputs": [
+                ("IMAGE", "IMAGE"),
+            ],
+            "widgets_values": [],
+        },
+
+        # =================================================================
+        # STAGE 2: Face Refinement (SAM3 + Inpaint)
+        # =================================================================
+
+        # -- SAM3 --
+        {
+            "id": 20,
+            "type": "LoadSAM3Model",
+            "title": "Load SAM3 Model",
+            "pos": [1500, 100],
+            "size": [315, 82],
+            "inputs": [],
+            "outputs": [
+                ("SAM3_MODEL", "SAM3_MODEL"),
+            ],
+            "widgets_values": [
+                "sam3.safetensors",
+            ],
+        },
+        {
+            "id": 21,
+            "type": "SAM3Grounding",
+            "title": "SAM3 Detect Face",
+            "pos": [1500, 250],
+            "size": [315, 150],
+            "inputs": [
+                ("sam3_model", "SAM3_MODEL"),
+                ("image", "IMAGE"),
+            ],
+            "outputs": [
+                ("masks", "MASK"),
+                ("visualization", "IMAGE"),
+                ("boxes", "STRING"),
+                ("scores", "STRING"),
+            ],
+            "widgets_values": [
+                0.33,       # confidence_threshold
+                "face",     # text_prompt
+                1,          # max_detections
+            ],
+        },
+
+        # -- Inpaint Crop --
+        {
+            "id": 22,
+            "type": "InpaintCropImproved",
+            "title": "Inpaint Crop (Face)",
+            "pos": [1500, 470],
+            "size": [315, 500],
+            "inputs": [
+                ("image", "IMAGE"),
+                ("mask", "MASK"),
+                ("optional_context_mask", "MASK"),
+            ],
+            "outputs": [
+                ("stitcher", "STITCHER"),
+                ("cropped_image", "IMAGE"),
+                ("cropped_mask", "MASK"),
+            ],
+            "widgets_values": [
+                "bilinear",     # downscale_algorithm
+                "bicubic",      # upscale_algorithm
+                False,          # preresize
+                "ensure minimum resolution",  # preresize_mode
+                1024,           # preresize_min_width
+                1024,           # preresize_min_height
+                16384,          # preresize_max_width
+                16384,          # preresize_max_height
+                True,           # mask_fill_holes
+                0,              # mask_expand_pixels
+                False,          # mask_invert
+                32,             # mask_blend_pixels
+                0.1,            # mask_hipass_filter
+                False,          # extend_for_outpainting
+                1.0,            # extend_up_factor
+                1.0,            # extend_down_factor
+                1.0,            # extend_left_factor
+                1.0,            # extend_right_factor
+                2.0,            # context_from_mask_extend_factor
+                True,           # output_resize_to_target_size
+                512,            # output_target_width
+                512,            # output_target_height
+                "32",           # output_padding
+                "gpu (much faster)",  # device_mode
+            ],
+        },
+
+        # -- Inpaint Conditioning --
+        {
+            "id": 24,
+            "type": "InpaintModelConditioning",
+            "title": "Inpaint Conditioning",
+            "pos": [1900, 100],
+            "size": [315, 200],
+            "inputs": [
+                ("positive", "CONDITIONING"),
+                ("negative", "CONDITIONING"),
+                ("vae", "VAE"),
+                ("pixels", "IMAGE"),
+                ("mask", "MASK"),
+            ],
+            "outputs": [
+                ("positive", "CONDITIONING"),
+                ("negative", "CONDITIONING"),
+                ("latent", "LATENT"),
+            ],
+            "widgets_values": [True],  # noise_mask
+        },
+
+        # -- Identity LoRA (higher strength for face) --
+        {
+            "id": 45,
+            "type": "LoraLoaderModelOnly",
+            "title": "Identity LoRA (Face, 0.95)",
+            "pos": [1900, 370],
+            "size": [315, 82],
+            "inputs": [
+                ("model", "MODEL"),
+            ],
+            "outputs": [("MODEL", "MODEL")],
+            "widgets_values": [
+                "identity_lora.safetensors",
+                0.95,
+            ],
+        },
+
+        # -- Face Sampler --
+        {
+            "id": 25,
+            "type": "KSampler",
+            "title": "Face Sampler",
+            "pos": [1900, 520],
+            "size": [315, 262],
+            "inputs": [
+                ("model", "MODEL"),
+                ("positive", "CONDITIONING"),
+                ("negative", "CONDITIONING"),
+                ("latent_image", "LATENT"),
+            ],
+            "outputs": [
+                ("LATENT", "LATENT"),
+            ],
+            "widgets_values": [
+                0,                      # seed
+                "randomize",            # seed control
+                18,                     # steps
+                3.0,                    # cfg
+                "euler",                # sampler_name
+                "linear_quadratic",     # scheduler
+                0.42,                   # denoise
+            ],
+        },
+
+        # -- Decode + Stitch --
+        {
+            "id": 26,
+            "type": "VAEDecode",
+            "title": "VAE Decode (Face)",
+            "pos": [2300, 100],
+            "size": [210, 46],
+            "inputs": [
+                ("samples", "LATENT"),
+                ("vae", "VAE"),
+            ],
+            "outputs": [
+                ("IMAGE", "IMAGE"),
+            ],
+            "widgets_values": [],
+        },
+        {
+            "id": 27,
+            "type": "InpaintStitchImproved",
+            "title": "Inpaint Stitch (Face)",
+            "pos": [2300, 220],
+            "size": [315, 82],
+            "inputs": [
+                ("stitcher", "STITCHER"),
+                ("inpainted_image", "IMAGE"),
+            ],
+            "outputs": [
+                ("image", "IMAGE"),
+            ],
+            "widgets_values": [],
+        },
+
+        # =================================================================
+        # STAGE 3: Face Restore (optional, muted)
+        # =================================================================
+        {
+            "id": 30,
+            "type": "FaceRestoreModelLoader",
+            "title": "Load CodeFormer",
+            "pos": [2700, 100],
+            "size": [315, 82],
+            "mode": 2,  # MUTED
+            "inputs": [],
+            "outputs": [
+                ("FACERESTORE_MODEL", "FACERESTORE_MODEL"),
+            ],
+            "widgets_values": [
+                "codeformer.pth",
+            ],
+        },
+        {
+            "id": 31,
+            "type": "FaceRestoreCFWithModel",
+            "title": "CodeFormer Restore",
+            "pos": [2700, 250],
+            "size": [315, 150],
+            "mode": 2,  # MUTED
+            "inputs": [
+                ("facerestore_model", "FACERESTORE_MODEL"),
+                ("image", "IMAGE"),
+            ],
+            "outputs": [
+                ("IMAGE", "IMAGE"),
+            ],
+            "widgets_values": [
+                "retinaface_resnet50",  # facedetection
+                0.7,                    # codeformer_fidelity
+            ],
+        },
+
+        # =================================================================
+        # STAGE 4: Upscale (optional, muted)
+        # =================================================================
+        {
+            "id": 35,
+            "type": "UpscaleModelLoader",
+            "title": "Load 4x Upscale Model",
+            "pos": [3100, 100],
+            "size": [315, 82],
+            "mode": 2,  # MUTED
+            "inputs": [],
+            "outputs": [
+                ("UPSCALE_MODEL", "UPSCALE_MODEL"),
+            ],
+            "widgets_values": [
+                "4xNomosUniDAT_otf.pth",
+            ],
+        },
+        {
+            "id": 36,
+            "type": "ImageUpscaleWithModel",
+            "title": "4x Upscale",
+            "pos": [3100, 250],
+            "size": [315, 82],
+            "mode": 2,  # MUTED
+            "inputs": [
+                ("upscale_model", "UPSCALE_MODEL"),
+                ("image", "IMAGE"),
+            ],
+            "outputs": [
+                ("IMAGE", "IMAGE"),
+            ],
+            "widgets_values": [],
+        },
+
+        # =================================================================
+        # OUTPUT
+        # =================================================================
+        {
+            "id": 40,
+            "type": "SaveImage",
+            "title": "Save Image",
+            "pos": [3500, 100],
+            "size": [315, 270],
+            "inputs": [
+                ("images", "IMAGE"),
+            ],
+            "outputs": [],
+            "widgets_values": [
+                "zimage_final",     # filename_prefix
+            ],
+        },
+        {
+            "id": 41,
+            "type": "PreviewImage",
+            "title": "Preview",
+            "pos": [3500, 430],
+            "size": [500, 500],
+            "inputs": [
+                ("images", "IMAGE"),
+            ],
+            "outputs": [],
+            "widgets_values": [],
+        },
+    ]
+
+    # ---------------------------------------------------------------
+    # Link definitions: (src_id, src_slot, dst_id, dst_slot, type_str)
+    # ---------------------------------------------------------------
+    links_def = [
+        # --- Stage 1: Model chain ---
+        # UNETLoader -> ModelSamplingAuraFlow -> IdentityLoRA -> StyleLoRA(muted) -> Base KSampler
+        (1, 0, 2, 0, "MODEL"),      # UNETLoader -> ModelSampling model
+        (2, 0, 3, 0, "MODEL"),      # ModelSampling -> Identity LoRA model
+        (3, 0, 4, 0, "MODEL"),      # Identity LoRA -> Style LoRA model
+        (4, 0, 15, 0, "MODEL"),     # Style LoRA -> Base KSampler model
+
+        # CLIP to both text encoders
+        (5, 0, 10, 0, "CLIP"),      # CLIPLoader -> Positive prompt clip
+        (5, 0, 11, 0, "CLIP"),      # CLIPLoader -> Negative prompt clip
+
+        # VAE to base decode
+        (6, 0, 16, 1, "VAE"),       # VAELoader -> Base VAEDecode vae
+
+        # Conditioning to base sampler
+        (10, 0, 15, 1, "CONDITIONING"),  # Positive -> Base KSampler positive
+        (11, 0, 15, 2, "CONDITIONING"),  # Negative -> Base KSampler negative
+
+        # Latent to base sampler
+        (12, 0, 15, 3, "LATENT"),   # EmptyLatent -> Base KSampler latent_image
+
+        # Base sampler to decode
+        (15, 0, 16, 0, "LATENT"),   # Base KSampler -> Base VAEDecode samples
+
+        # --- Stage 2: Face Refinement ---
+        # SAM3 face detection
+        (16, 0, 21, 1, "IMAGE"),    # Base decoded image -> SAM3Grounding image
+        (20, 0, 21, 0, "SAM3_MODEL"),  # LoadSAM3Model -> SAM3Grounding model
+
+        # Inpaint crop
+        (16, 0, 22, 0, "IMAGE"),    # Base decoded image -> InpaintCrop image
+        (21, 0, 22, 1, "MASK"),     # SAM3 masks -> InpaintCrop mask
+
+        # Inpaint conditioning
+        (10, 0, 24, 0, "CONDITIONING"),  # Positive -> InpaintCond positive
+        (11, 0, 24, 1, "CONDITIONING"),  # Negative -> InpaintCond negative
+        (6, 0, 24, 2, "VAE"),            # VAE -> InpaintCond vae
+        (22, 1, 24, 3, "IMAGE"),         # Cropped image -> InpaintCond pixels
+        (22, 2, 24, 4, "MASK"),          # Cropped mask -> InpaintCond mask
+
+        # Identity LoRA at higher strength for face sampler
+        (4, 0, 45, 0, "MODEL"),     # Style LoRA out -> Face Identity LoRA model
+
+        # Face sampler
+        (45, 0, 25, 0, "MODEL"),         # Face Identity LoRA -> Face KSampler model
+        (24, 0, 25, 1, "CONDITIONING"),  # InpaintCond positive -> Face KSampler
+        (24, 1, 25, 2, "CONDITIONING"),  # InpaintCond negative -> Face KSampler
+        (24, 2, 25, 3, "LATENT"),        # InpaintCond latent -> Face KSampler
+
+        # Decode refined face
+        (25, 0, 26, 0, "LATENT"),   # Face KSampler -> Face VAEDecode samples
+        (6, 0, 26, 1, "VAE"),       # VAE -> Face VAEDecode vae
+
+        # Stitch face back
+        (22, 0, 27, 0, "STITCHER"),  # InpaintCrop stitcher -> InpaintStitch
+        (26, 0, 27, 1, "IMAGE"),     # Decoded face -> InpaintStitch inpainted_image
+
+        # --- Stage 3: Face Restore (muted) ---
+        (30, 0, 31, 0, "FACERESTORE_MODEL"),  # FaceRestoreModelLoader -> FaceRestoreCF
+        (27, 0, 31, 1, "IMAGE"),              # Stitched image -> FaceRestoreCF image
+
+        # --- Stage 4: Upscale (muted) ---
+        (35, 0, 36, 0, "UPSCALE_MODEL"),  # UpscaleModelLoader -> ImageUpscale
+        (31, 0, 36, 1, "IMAGE"),           # Face restored image -> ImageUpscale
+
+        # --- Output ---
+        (36, 0, 40, 0, "IMAGE"),    # Upscaled image -> SaveImage
+        (36, 0, 41, 0, "IMAGE"),    # Upscaled image -> PreviewImage
+    ]
+
+    # ---------------------------------------------------------------
+    # Groups
+    # ---------------------------------------------------------------
+    groups_def = [
+        {
+            "title": "Stage 1: Base Generation",
+            "bounding": [60, 50, 1350, 780],
+            "color": "#363",
+        },
+        {
+            "title": "Stage 2: Face Refinement (SAM3)",
+            "bounding": [1460, 50, 1100, 780],
+            "color": "#336",
+        },
+        {
+            "title": "Stage 3: Face Restore (optional)",
+            "bounding": [2660, 50, 400, 380],
+            "color": "#549",
+        },
+        {
+            "title": "Stage 4: Upscale (optional)",
+            "bounding": [3060, 50, 400, 310],
+            "color": "#549",
+        },
+        {
+            "title": "Output",
+            "bounding": [3460, 50, 580, 930],
+            "color": "#444",
+        },
+    ]
+
+    return make_workflow(nodes_def, links_def, groups_def)
+
+
+def main():
+    # Dataset generation workflow
+    wf_dataset = build_dataset_gen()
+    out_dataset = PROJECT_ROOT / "user/default/workflows/dataset_gen_qie2511.json"
+    save_workflow(wf_dataset, out_dataset)
+
+    print(f"\n--- Dataset Gen Workflow ---")
+    print(f"Nodes: {len(wf_dataset['nodes'])}")
+    print(f"Links: {len(wf_dataset['links'])}")
+    for n in wf_dataset["nodes"]:
+        mode = " (MUTED)" if n.get("mode") == 2 else ""
+        print(f"  {n['id']}: {n['type']}{mode} - {n.get('title', '')}")
+
+    # Final generation workflow
+    wf_final = build_final_gen()
+    out_final = PROJECT_ROOT / "user/default/workflows/final_gen_zimage_base.json"
+    save_workflow(wf_final, out_final)
+
+    print(f"\n--- Final Gen Workflow ---")
+    print(f"Nodes: {len(wf_final['nodes'])}")
+    print(f"Links: {len(wf_final['links'])}")
+    for n in wf_final["nodes"]:
+        mode = " (MUTED)" if n.get("mode") == 2 else ""
+        print(f"  {n['id']}: {n['type']}{mode} - {n.get('title', '')}")
 
 
 if __name__ == "__main__":

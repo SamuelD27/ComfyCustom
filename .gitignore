@@ -25,6 +25,7 @@ venv*/
 /user/default/workflows/*
 !/user/default/workflows/prompts/
 !/user/default/workflows/dataset_gen_*.json
+!/user/default/workflows/final_gen_*.json
 *.log
 web_custom_versions/
 .DS_Store
