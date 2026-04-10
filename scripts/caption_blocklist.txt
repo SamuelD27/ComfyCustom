@@ -14,6 +14,9 @@ high cheekbones
 prominent cheekbones
 chiseled features
 delicate features
+defined jawline
+wide jaw
+narrow face
 
 # Eyes
 brown eyes
@@ -55,6 +58,10 @@ straight nose
 broad nose
 narrow nose
 upturned nose
+roman nose
+snub nose
+bulbous nose
+pointed nose
 
 # Lips
 full lips
@@ -62,6 +69,11 @@ thin lips
 wide lips
 small mouth
 large mouth
+cupid's bow
+pouty lips
+heart-shaped lips
+bow-shaped lips
+defined lip line
 
 # Ethnicity / race
 caucasian
