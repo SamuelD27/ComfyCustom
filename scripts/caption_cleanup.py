@@ -110,6 +110,8 @@ def normalize_formatting(caption: str) -> str:
     result = re.sub(r",(?!\s)", ", ", result)
     # Remove double commas
     result = re.sub(r",\s*,", ",", result)
+    # Strip leading comma
+    result = re.sub(r"^,\s*", "", result)
     # Remove double spaces
     result = re.sub(r"\s{2,}", " ", result)
     # Strip trailing whitespace
@@ -260,6 +262,13 @@ def main():
     report_rows = []
 
     for caption_file in caption_files:
+        has_image = any(
+            (caption_file.parent / (caption_file.stem + ext)).exists()
+            for ext in IMAGE_EXTENSIONS
+        )
+        if not has_image:
+            continue
+
         original = caption_file.read_text().strip()
         stats["total"] += 1
 
