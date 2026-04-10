@@ -81,7 +81,7 @@ def queue_prompt(
         urllib.error.URLError: If the request fails.
     """
     full_prompt = f"{trigger_word}, {prompt_text}" if trigger_word else prompt_text
-    actual_seed = seed if seed is not None else random.randint(0, 2**32)
+    actual_seed = seed if seed is not None else random.randint(0, 2**32 - 1)
 
     prompt_dict = {
         "1": {
