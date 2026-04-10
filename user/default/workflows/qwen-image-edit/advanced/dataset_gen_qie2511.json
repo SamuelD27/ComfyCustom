@@ -1,6 +1,6 @@
 {
-  "last_node_id": 31,
-  "last_link_id": 19,
+  "last_node_id": 62,
+  "last_link_id": 25,
   "nodes": [
     {
       "id": 1,
@@ -257,7 +257,7 @@
           "type": "*",
           "slot_index": 0,
           "links": [
-            15
+            21
           ]
         },
         {
@@ -525,8 +525,7 @@
           "slot_index": 0,
           "links": [
             13,
-            17,
-            19
+            15
           ]
         }
       ],
@@ -535,6 +534,171 @@
       },
       "widgets_values": [],
       "title": "VAE Decode"
+    },
+    {
+      "id": 60,
+      "type": "GetImageSize",
+      "pos": [
+        2150,
+        100
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "slot_index": 0,
+          "links": [
+            14
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "slot_index": 1,
+          "links": [
+            17
+          ]
+        },
+        {
+          "name": "batch_size",
+          "type": "INT",
+          "slot_index": 2,
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetImageSize"
+      },
+      "widgets_values": [],
+      "title": "Get Output Size"
+    },
+    {
+      "id": 61,
+      "type": "CR Integer Multiple",
+      "pos": [
+        2150,
+        220
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "integer",
+          "type": "INT",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "slot_index": 0,
+          "links": [
+            16,
+            18
+          ]
+        },
+        {
+          "name": "show_help",
+          "type": "STRING",
+          "slot_index": 1,
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CR Integer Multiple"
+      },
+      "widgets_values": [
+        0,
+        0.5
+      ],
+      "title": "Width / 2"
+    },
+    {
+      "id": 62,
+      "type": "ImageCrop",
+      "pos": [
+        2150,
+        380
+      ],
+      "size": [
+        315,
+        130
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 15
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 16
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 17
+        },
+        {
+          "name": "x",
+          "type": "INT",
+          "link": 18
+        },
+        {
+          "name": "y",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "y"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            19,
+            23,
+            25
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCrop"
+      },
+      "widgets_values": [
+        512,
+        512,
+        0,
+        0
+      ],
+      "title": "Crop Right Half (generated image)"
     },
     {
       "id": 20,
@@ -548,7 +712,7 @@
         600
       ],
       "flags": {},
-      "order": 11,
+      "order": 14,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -557,7 +721,7 @@
           "type": "JOYCAPTION_EXTRA_OPTIONS",
           "slot_index": 0,
           "links": [
-            14
+            20
           ]
         }
       ],
@@ -608,18 +772,18 @@
         350
       ],
       "flags": {},
-      "order": 12,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 13
+          "link": 19
         },
         {
           "name": "extra_options",
           "type": "JOYCAPTION_EXTRA_OPTIONS",
-          "link": 14
+          "link": 20
         }
       ],
       "outputs": [
@@ -634,7 +798,7 @@
           "type": "STRING",
           "slot_index": 1,
           "links": [
-            16
+            22
           ]
         }
       ],
@@ -667,18 +831,18 @@
         100
       ],
       "flags": {},
-      "order": 13,
+      "order": 16,
       "mode": 0,
       "inputs": [
         {
           "name": "string1",
           "type": "STRING",
-          "link": 15
+          "link": 21
         },
         {
           "name": "string2",
           "type": "STRING",
-          "link": 16
+          "link": 22
         }
       ],
       "outputs": [
@@ -687,7 +851,7 @@
           "type": "STRING",
           "slot_index": 0,
           "links": [
-            18
+            24
           ]
         }
       ],
@@ -711,18 +875,18 @@
         150
       ],
       "flags": {},
-      "order": 14,
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 17
+          "link": 23
         },
         {
           "name": "caption",
           "type": "STRING",
-          "link": 18
+          "link": 24
         }
       ],
       "outputs": [
@@ -755,13 +919,13 @@
         500
       ],
       "flags": {},
-      "order": 15,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 19
+          "link": 25
         }
       ],
       "outputs": [],
@@ -873,12 +1037,60 @@
       13,
       16,
       0,
-      21,
+      60,
       0,
       "IMAGE"
     ],
     [
       14,
+      60,
+      0,
+      61,
+      0,
+      "INT"
+    ],
+    [
+      15,
+      16,
+      0,
+      62,
+      0,
+      "IMAGE"
+    ],
+    [
+      16,
+      61,
+      0,
+      62,
+      1,
+      "INT"
+    ],
+    [
+      17,
+      60,
+      1,
+      62,
+      2,
+      "INT"
+    ],
+    [
+      18,
+      61,
+      0,
+      62,
+      3,
+      "INT"
+    ],
+    [
+      19,
+      62,
+      0,
+      21,
+      0,
+      "IMAGE"
+    ],
+    [
+      20,
       20,
       0,
       21,
@@ -886,7 +1098,7 @@
       "JOYCAPTION_EXTRA_OPTIONS"
     ],
     [
-      15,
+      21,
       8,
       0,
       25,
@@ -894,7 +1106,7 @@
       "STRING"
     ],
     [
-      16,
+      22,
       21,
       1,
       25,
@@ -902,15 +1114,15 @@
       "STRING"
     ],
     [
-      17,
-      16,
+      23,
+      62,
       0,
       30,
       0,
       "IMAGE"
     ],
     [
-      18,
+      24,
       25,
       0,
       30,
@@ -918,8 +1130,8 @@
       "STRING"
     ],
     [
-      19,
-      16,
+      25,
+      62,
       0,
       31,
       0,

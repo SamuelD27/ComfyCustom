@@ -237,7 +237,58 @@ def build_dataset_gen():
             "widgets_values": [],
         },
 
-        # -- Captioning (x=2300) --
+        # -- Crop right half (QIE2511 outputs reference|generated side-by-side) --
+        {
+            "id": 60,
+            "type": "GetImageSize",
+            "title": "Get Output Size",
+            "pos": [2150, 100],
+            "size": [210, 46],
+            "inputs": [
+                ("image", "IMAGE"),
+            ],
+            "outputs": [
+                ("width", "INT"),
+                ("height", "INT"),
+                ("batch_size", "INT"),
+            ],
+            "widgets_values": [],
+        },
+        {
+            "id": 61,
+            "type": "CR Integer Multiple",
+            "title": "Width / 2",
+            "pos": [2150, 220],
+            "size": [250, 82],
+            "inputs": [
+                ("integer", "INT"),
+            ],
+            "outputs": [
+                ("INT", "INT"),
+                ("show_help", "STRING"),
+            ],
+            "widgets_values": [0, 0.5],
+        },
+        {
+            "id": 62,
+            "type": "ImageCrop",
+            "title": "Crop Right Half (generated image)",
+            "pos": [2150, 380],
+            "size": [315, 130],
+            "inputs": [
+                ("image", "IMAGE"),
+                ("width", "INT"),
+                ("height", "INT"),
+                ("x", "INT"),
+                ("y", "INT"),
+            ],
+            "outputs": [
+                ("IMAGE", "IMAGE"),
+            ],
+            "widgets_values": [512, 512, 0, 0],
+        },
+
+        # -- Captioning (x=2500) --
         {
             "id": 20,
             "type": "JC_ExtraOptions",
@@ -390,8 +441,17 @@ def build_dataset_gen():
         # Sampler to decode
         (15, 0, 16, 0, "LATENT"),   # KSampler -> VAEDecode
 
-        # Decoded image to JoyCaption
-        (16, 0, 21, 0, "IMAGE"),    # VAEDecode IMAGE -> JC_adv image
+        # Crop right half of QIE2511 output (left=reference, right=generated)
+        (16, 0, 60, 0, "IMAGE"),    # VAEDecode -> GetImageSize
+        (60, 0, 61, 0, "INT"),      # width -> CR Integer Multiple (÷2)
+        (16, 0, 62, 0, "IMAGE"),    # VAEDecode -> ImageCrop image
+        (61, 0, 62, 1, "INT"),      # half_width -> ImageCrop width
+        (60, 1, 62, 2, "INT"),      # height -> ImageCrop height
+        (61, 0, 62, 3, "INT"),      # half_width -> ImageCrop x
+        # y=0 stays as widget default
+
+        # Cropped image to JoyCaption
+        (62, 0, 21, 0, "IMAGE"),    # Cropped IMAGE -> JC_adv image
 
         # Extra options to JoyCaption
         (20, 0, 21, 1, "JOYCAPTION_EXTRA_OPTIONS"),  # JC_ExtraOptions -> JC_adv
@@ -402,14 +462,14 @@ def build_dataset_gen():
         # Caption to JoinStrings
         (21, 1, 25, 1, "STRING"),   # JC_adv STRING output (slot 1) -> JoinStrings string2
 
-        # Decoded image to SaveImageKJ
-        (16, 0, 30, 0, "IMAGE"),    # VAEDecode IMAGE -> SaveImageKJ images
+        # Cropped image to SaveImageKJ
+        (62, 0, 30, 0, "IMAGE"),    # Cropped IMAGE -> SaveImageKJ images
 
         # Joined caption to SaveImageKJ
         (25, 0, 30, 1, "STRING"),   # JoinStrings -> SaveImageKJ caption
 
-        # Decoded image to preview
-        (16, 0, 31, 0, "IMAGE"),    # VAEDecode IMAGE -> PreviewImage
+        # Cropped image to preview
+        (62, 0, 31, 0, "IMAGE"),    # Cropped IMAGE -> PreviewImage
     ]
 
     # ---------------------------------------------------------------
