@@ -1041,7 +1041,7 @@ def build_final_gen():
 def main():
     # Dataset generation workflow
     wf_dataset = build_dataset_gen()
-    out_dataset = PROJECT_ROOT / "user/default/workflows/dataset_gen_qie2511.json"
+    out_dataset = PROJECT_ROOT / "user/default/workflows/qwen-image-edit/advanced/dataset_gen_qie2511.json"
     save_workflow(wf_dataset, out_dataset)
 
     print(f"\n--- Dataset Gen Workflow ---")
@@ -1053,7 +1053,7 @@ def main():
 
     # Final generation workflow
     wf_final = build_final_gen()
-    out_final = PROJECT_ROOT / "user/default/workflows/final_gen_zimage_base.json"
+    out_final = PROJECT_ROOT / "user/default/workflows/z-image-base/advanced/final_gen_zimage_base.json"
     save_workflow(wf_final, out_final)
 
     print(f"\n--- Final Gen Workflow ---")
