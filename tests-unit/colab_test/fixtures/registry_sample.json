@@ -1,0 +1,23 @@
+{
+  "config": {},
+  "pipelines": {
+    "flux2-dev": {
+      "display_name": "Flux 2 Dev",
+      "total_size_gb": 66,
+      "models": [
+        {"filename": "flux2-dev.safetensors", "dest_subdir": "diffusion_models", "size_gb": 61, "source": "hf", "hf_repo": "black-forest-labs/FLUX.2-dev", "hf_file": "flux2-dev.safetensors"}
+      ],
+      "loras": [
+        {"filename": "lora-a.safetensors", "display_name": "LoRA A", "size_gb": 0.5, "source": "hf", "hf_repo": "x/y", "hf_file": "lora-a.safetensors"}
+      ]
+    },
+    "z-image-turbo-6b": {
+      "display_name": "Z-Image Turbo 6B",
+      "total_size_gb": 21,
+      "models": [
+        {"filename": "z_image_turbo_bf16.safetensors", "dest_subdir": "diffusion_models", "size_gb": 12.3, "source": "hf", "hf_repo": "Comfy-Org/z-image", "hf_file": "z_image_turbo_bf16.safetensors"}
+      ],
+      "loras": []
+    }
+  }
+}

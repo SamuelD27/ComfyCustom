@@ -149,3 +149,42 @@ def apply_hf_env(token: "str | None") -> None:
         return
     os.environ["HF_TOKEN"] = token
     os.environ["HUGGING_FACE_HUB_TOKEN"] = token
+
+
+import json
+from pathlib import Path
+from typing import Any, Dict, List
+
+__all__ += ["load_registry", "list_pipelines", "pipeline_models", "pipeline_loras"]
+
+
+def load_registry(path: "str | Path") -> Dict[str, Any]:
+    """Load scripts/model_registry.json into a dict."""
+    with open(path) as f:
+        return json.load(f)
+
+
+def list_pipelines(registry: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Return a flat list of pipeline summaries for the selector UI."""
+    out = []
+    for key, pipe in registry.get("pipelines", {}).items():
+        out.append(
+            {
+                "key": key,
+                "display_name": pipe.get("display_name", key),
+                "total_size_gb": pipe.get("total_size_gb", 0),
+                "model_count": len(pipe.get("models", [])),
+                "lora_count": len(pipe.get("loras", [])),
+            }
+        )
+    return out
+
+
+def pipeline_models(registry: Dict[str, Any], key: str) -> List[Dict[str, Any]]:
+    """Return the model spec list for a pipeline. Raises KeyError if unknown."""
+    return list(registry["pipelines"][key].get("models", []))
+
+
+def pipeline_loras(registry: Dict[str, Any], key: str) -> List[Dict[str, Any]]:
+    """Return the lora spec list for a pipeline. Empty list if none. Raises KeyError if unknown."""
+    return list(registry["pipelines"][key].get("loras", []))
