@@ -52,3 +52,54 @@ def compute_cap_from_name(name: str) -> int:
         if pat.search(name):
             return cc
     return 0
+
+
+from dataclasses import dataclass, field
+from typing import List
+
+__all__ += ["TorchDecision", "torch_action"]
+
+
+@dataclass
+class TorchDecision:
+    action: str  # "keep" or "reinstall"
+    reason: str
+    pip_args: List[str] = field(default_factory=list)
+    index_url: str = ""
+
+
+_CU128_PIP_ARGS = [
+    "torch==2.11.0",
+    "torchvision==0.26.0",
+    "torchaudio==2.11.0",
+]
+_CU128_INDEX = "https://download.pytorch.org/whl/cu128"
+
+
+def torch_action(cc: int, arch_list: List[str]) -> TorchDecision:
+    """Decide whether to keep Colab's preinstalled torch or reinstall cu128.
+
+    Args:
+        cc: compute capability as integer (0 = unknown / no GPU).
+        arch_list: output of ``torch.cuda.get_arch_list()``.
+    """
+    if cc == 0:
+        return TorchDecision(
+            action="keep",
+            reason="No GPU detected — keeping preinstalled torch.",
+        )
+    target = f"sm_{cc}"
+    if target in arch_list:
+        return TorchDecision(
+            action="keep",
+            reason=f"Preinstalled torch already supports {target}.",
+        )
+    return TorchDecision(
+        action="reinstall",
+        reason=(
+            f"{target} not in preinstalled arch list {arch_list}; "
+            "reinstalling torch from cu128 index (broader third-party wheel coverage)."
+        ),
+        pip_args=list(_CU128_PIP_ARGS),
+        index_url=_CU128_INDEX,
+    )

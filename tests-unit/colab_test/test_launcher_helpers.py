@@ -41,3 +41,26 @@ def test_compute_cap_from_name_maps_known_gpus():
     assert launcher_helpers.compute_cap_from_name("NVIDIA L40S") == 89
     assert launcher_helpers.compute_cap_from_name("Tesla T4") == 75
     assert launcher_helpers.compute_cap_from_name("Some Unknown GPU") == 0
+
+
+def test_torch_action_keep_when_cc_in_archlist():
+    decision = launcher_helpers.torch_action(cc=80, arch_list=["sm_80", "sm_90", "sm_120"])
+    assert decision.action == "keep"
+    assert decision.reason
+
+
+def test_torch_action_keep_when_cc_is_zero_cpu_only_runtime():
+    decision = launcher_helpers.torch_action(cc=0, arch_list=["sm_80"])
+    assert decision.action == "keep"
+
+
+def test_torch_action_reinstall_when_cc_missing():
+    decision = launcher_helpers.torch_action(cc=120, arch_list=["sm_80", "sm_90"])
+    assert decision.action == "reinstall"
+    assert "cu128" in decision.reason
+
+
+def test_torch_action_reinstall_returns_pip_args():
+    decision = launcher_helpers.torch_action(cc=120, arch_list=["sm_80"])
+    assert decision.pip_args[0].startswith("torch==")
+    assert decision.index_url.endswith("/cu128")
