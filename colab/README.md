@@ -3,12 +3,12 @@
 One-click launch of this repo's ComfyUI setup on Google Colab, with registry-driven
 pipeline selection, on-demand weight downloads, and a public `cloudflared` URL.
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/samsam27/ComfyUI/blob/colab/colab/ComfyUI_Colab.ipynb)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SamuelD27/ComfyCustom/blob/Collab/colab/ComfyUI_Colab.ipynb)
 
-The launcher lives on the long-lived `colab` branch (parallel to `master`) so the Colab-specific
-code never merges into the main repo. Push this worktree to `origin/colab` on your fork before
-the Open-in-Colab badge will resolve. Update the badge link if you fork this repo: replace
-`samsam27/ComfyUI` with `<your-gh-user>/ComfyUI`.
+The launcher lives on the long-lived `Collab` branch of `SamuelD27/ComfyCustom` (parallel to
+`main`) so the Colab-specific code never merges into the main repo. If you fork this repo,
+update the badge link: replace `SamuelD27/ComfyCustom` with `<your-gh-user>/<repo>` and
+adjust the branch name to match wherever you store the Colab files.
 
 ## Prerequisites
 
@@ -35,12 +35,13 @@ The notebook has eight numbered sections, run top-to-bottom:
 
 ## Customising the repo URL
 
-By default the notebook clones `https://github.com/samsam27/ComfyUI.git`. To use a different repo
-(e.g. your own fork or upstream), set the env var before running section 5:
+By default the notebook clones `https://github.com/SamuelD27/ComfyCustom.git` at branch `Collab`.
+To use a different repo or branch, set env vars before running section 5:
 
 ```python
 import os
-os.environ["COMFYUI_COLAB_REPO_URL"] = "https://github.com/<you>/ComfyUI.git"
+os.environ["COMFYUI_COLAB_REPO_URL"] = "https://github.com/<you>/<repo>.git"
+os.environ["COMFYUI_COLAB_BRANCH"] = "<branch-with-colab-dir>"
 ```
 
 ## Known caveats
