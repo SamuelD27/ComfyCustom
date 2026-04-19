@@ -3,9 +3,12 @@
 One-click launch of this repo's ComfyUI setup on Google Colab, with registry-driven
 pipeline selection, on-demand weight downloads, and a public `cloudflared` URL.
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/samsam27/ComfyUI/blob/master/colab/ComfyUI_Colab.ipynb)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/samsam27/ComfyUI/blob/colab/colab/ComfyUI_Colab.ipynb)
 
-Update the badge link if you fork this repo: replace `samsam27/ComfyUI` with `<your-gh-user>/ComfyUI`.
+The launcher lives on the long-lived `colab` branch (parallel to `master`) so the Colab-specific
+code never merges into the main repo. Push this worktree to `origin/colab` on your fork before
+the Open-in-Colab badge will resolve. Update the badge link if you fork this repo: replace
+`samsam27/ComfyUI` with `<your-gh-user>/ComfyUI`.
 
 ## Prerequisites
 
