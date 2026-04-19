@@ -9,8 +9,11 @@ __all__ = ["__version__"]
 
 __version__ = "0.1.0"
 
+import getpass as _getpass
+import os
 import re
 import subprocess
+import sys
 
 __all__ += ["compute_cap_from_smi", "compute_cap_from_name"]
 
@@ -57,7 +60,7 @@ def compute_cap_from_name(name: str) -> int:
 from dataclasses import dataclass, field
 from typing import List
 
-__all__ += ["TorchDecision", "torch_action"]
+__all__ += ["TorchDecision", "torch_action", "load_secret", "apply_hf_env"]
 
 
 @dataclass
@@ -103,3 +106,46 @@ def torch_action(cc: int, arch_list: List[str]) -> TorchDecision:
         pip_args=list(_CU128_PIP_ARGS),
         index_url=_CU128_INDEX,
     )
+
+
+def load_secret(name: str, interactive: bool = True) -> "str | None":
+    """Load a secret (HF_TOKEN, CIVITAI_TOKEN, etc.) from Colab userdata
+    or fall back to an interactive getpass prompt.
+
+    Returns None if not available and interactive=False.
+    """
+    mod = sys.modules.get("google.colab")
+    if mod is None:
+        try:
+            import google.colab as mod  # type: ignore
+        except ImportError:
+            mod = None
+    if mod is not None and hasattr(mod, "userdata"):
+        ud = mod.userdata
+        try:
+            val = ud.get(name)
+            if val:
+                return val
+        except getattr(ud, "SecretNotFoundError", Exception):
+            pass
+        except getattr(ud, "NotebookAccessError", Exception):
+            print(
+                f"[secrets] '{name}' exists but notebook is not authorised "
+                "— toggle access in the key icon on the left sidebar."
+            )
+            return None
+    if interactive:
+        try:
+            val = _getpass.getpass(f"{name} (hidden, or press Enter to skip): ")
+        except Exception:
+            return None
+        return val or None
+    return None
+
+
+def apply_hf_env(token: "str | None") -> None:
+    """Set both HF env var names that huggingface_hub/`hf` CLI look up."""
+    if not token:
+        return
+    os.environ["HF_TOKEN"] = token
+    os.environ["HUGGING_FACE_HUB_TOKEN"] = token

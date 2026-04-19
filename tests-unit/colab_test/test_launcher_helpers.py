@@ -64,3 +64,61 @@ def test_torch_action_reinstall_returns_pip_args():
     decision = launcher_helpers.torch_action(cc=120, arch_list=["sm_80"])
     assert decision.pip_args[0].startswith("torch==")
     assert decision.index_url.endswith("/cu128")
+
+
+import os
+import sys
+from unittest.mock import patch
+
+
+def test_load_secret_prefers_userdata(monkeypatch):
+    class FakeSecretNotFound(Exception):
+        pass
+
+    class FakeUserdata:
+        SecretNotFoundError = FakeSecretNotFound
+        NotebookAccessError = RuntimeError
+
+        @staticmethod
+        def get(name):
+            return "hf_fake_token_abc"
+
+    with patch.dict("sys.modules", {"google.colab": type("m", (), {"userdata": FakeUserdata})}):
+        assert launcher_helpers.load_secret("HF_TOKEN") == "hf_fake_token_abc"
+
+
+def test_load_secret_returns_none_when_secret_missing(monkeypatch):
+    class FakeSecretNotFound(Exception):
+        pass
+
+    class FakeUserdata:
+        SecretNotFoundError = FakeSecretNotFound
+        NotebookAccessError = RuntimeError
+
+        @staticmethod
+        def get(name):
+            raise FakeSecretNotFound()
+
+    with patch.dict("sys.modules", {"google.colab": type("m", (), {"userdata": FakeUserdata})}):
+        assert launcher_helpers.load_secret("HF_TOKEN", interactive=False) is None
+
+
+def test_load_secret_falls_back_to_getpass_when_no_colab(monkeypatch):
+    # Simulate non-Colab environment: google.colab not importable
+    monkeypatch.setitem(__import__("sys").modules, "google.colab", None)
+    with patch("getpass.getpass", return_value="hf_from_prompt"):
+        assert launcher_helpers.load_secret("HF_TOKEN", interactive=True) == "hf_from_prompt"
+
+
+def test_apply_hf_env_sets_both_variables(monkeypatch):
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    monkeypatch.delenv("HUGGING_FACE_HUB_TOKEN", raising=False)
+    launcher_helpers.apply_hf_env("hf_xyz")
+    assert os.environ["HF_TOKEN"] == "hf_xyz"
+    assert os.environ["HUGGING_FACE_HUB_TOKEN"] == "hf_xyz"
+
+
+def test_apply_hf_env_noop_on_none(monkeypatch):
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    launcher_helpers.apply_hf_env(None)
+    assert "HF_TOKEN" not in os.environ
