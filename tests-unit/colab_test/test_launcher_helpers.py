@@ -197,3 +197,20 @@ def test_save_prefs_creates_parent_dir(tmp_path):
     target = tmp_path / "deep" / "path" / "prefs.json"
     save_prefs(target, {"pipelines": ["z-image-turbo-6b"]})
     assert load_prefs(target) == {"pipelines": ["z-image-turbo-6b"]}
+
+
+def test_write_auth_header_creates_file_with_mode_0600(tmp_path):
+    from colab.launcher_helpers import write_auth_header
+    p = write_auth_header("token_abc", tmp_path)
+    assert p.exists()
+    assert p.read_text() == "Authorization: Bearer token_abc\n"
+    # Owner-only permissions
+    import stat as _stat
+    mode = p.stat().st_mode & 0o777
+    assert mode == 0o600
+
+
+def test_write_auth_header_returns_none_for_empty_token(tmp_path):
+    from colab.launcher_helpers import write_auth_header
+    assert write_auth_header("", tmp_path) is None
+    assert write_auth_header(None, tmp_path) is None

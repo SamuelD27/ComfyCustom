@@ -152,6 +152,7 @@ def apply_hf_env(token: "str | None") -> None:
 
 
 import json
+import tempfile
 from pathlib import Path
 from typing import Any, Dict
 
@@ -213,3 +214,28 @@ def save_prefs(path: "str | Path", prefs: Dict[str, Any]) -> None:
     p.parent.mkdir(parents=True, exist_ok=True)
     with open(p, "w") as f:
         json.dump(prefs, f, indent=2)
+
+
+__all__ += ["write_auth_header"]
+
+
+def write_auth_header(token: "str | None", tmp_dir: "str | Path") -> "Path | None":
+    """Write an 'Authorization: Bearer <token>' header file (mode 0600).
+
+    Returns the Path of the file, or None if no token was supplied.
+    """
+    if not token:
+        return None
+    d = Path(tmp_dir)
+    d.mkdir(parents=True, exist_ok=True)
+    fd, name = tempfile.mkstemp(prefix="auth_", suffix=".hdr", dir=str(d))
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(f"Authorization: Bearer {token}\n")
+    except Exception:
+        try:
+            os.unlink(name)
+        finally:
+            raise
+    os.chmod(name, 0o600)
+    return Path(name)
