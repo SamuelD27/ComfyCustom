@@ -241,7 +241,15 @@ def write_auth_header(token: "str | None", tmp_dir: "str | Path") -> "Path | Non
     return Path(name)
 
 
-__all__ += ["build_hf_download_cmd", "build_aria2c_cmd"]
+__all__ += ["build_hf_download_cmd", "build_aria2c_cmd", "extract_trycloudflare_url"]
+
+
+_TRYCLOUDFLARE_RX = re.compile(r"https://[-a-z0-9]+\.trycloudflare\.com")
+
+
+def extract_trycloudflare_url(line: str) -> "str | None":
+    m = _TRYCLOUDFLARE_RX.search(line)
+    return m.group(0) if m else None
 
 
 def build_hf_download_cmd(

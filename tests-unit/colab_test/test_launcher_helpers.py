@@ -259,3 +259,19 @@ def test_build_aria2c_cmd_with_auth_header_file():
     assert "--header=@/tmp/auth.hdr" in cmd
     # Quiet flags to avoid leaking the token via verbose error output
     assert "--quiet=true" in cmd or any(c.startswith("--console-log-level") for c in cmd)
+
+
+def test_extract_trycloudflare_url_positive_match():
+    from colab.launcher_helpers import extract_trycloudflare_url
+    line = "2026-04-18T12:00:00Z INF +-----https://foo-bar-baz.trycloudflare.com-----+"
+    assert extract_trycloudflare_url(line) == "https://foo-bar-baz.trycloudflare.com"
+
+
+def test_extract_trycloudflare_url_returns_none_when_absent():
+    from colab.launcher_helpers import extract_trycloudflare_url
+    assert extract_trycloudflare_url("some unrelated log line") is None
+
+
+def test_extract_trycloudflare_url_ignores_http_only():
+    from colab.launcher_helpers import extract_trycloudflare_url
+    assert extract_trycloudflare_url("http://not-https.trycloudflare.com") is None
