@@ -239,3 +239,75 @@ def write_auth_header(token: "str | None", tmp_dir: "str | Path") -> "Path | Non
             raise
     os.chmod(name, 0o600)
     return Path(name)
+
+
+__all__ += ["build_hf_download_cmd", "build_aria2c_cmd"]
+
+
+def build_hf_download_cmd(
+    repo: str,
+    filename: str,
+    dest_dir: str,
+    max_workers: int = 32,
+) -> List[str]:
+    """Build argv for HuggingFace CLI `hf download` command.
+
+    Args:
+        repo: HuggingFace repo ID (e.g. "black-forest-labs/FLUX.2-dev").
+        filename: File to download from the repo.
+        dest_dir: Destination directory for the downloaded file.
+        max_workers: Number of parallel download workers (default 32).
+
+    Returns:
+        List of command arguments ready for subprocess.run().
+    """
+    return [
+        "hf",
+        "download",
+        repo,
+        filename,
+        "--local-dir",
+        dest_dir,
+        "--max-workers",
+        str(max_workers),
+    ]
+
+
+def build_aria2c_cmd(
+    url: str,
+    dest_dir: str,
+    filename: str,
+    auth_header_file: "str | None" = None,
+    connections: int = 16,
+) -> List[str]:
+    """Build argv for aria2c download command.
+
+    Configures aria2c for fast parallel downloads with optional authentication.
+
+    Args:
+        url: Full download URL (HTTP/HTTPS).
+        dest_dir: Destination directory for the downloaded file.
+        filename: Output filename.
+        auth_header_file: Path to file containing "Authorization: Bearer <token>"
+                         (created by write_auth_header). Optional.
+        connections: Number of parallel connections (default 16).
+
+    Returns:
+        List of command arguments ready for subprocess.run().
+    """
+    cmd = [
+        "aria2c",
+        "-x", str(connections),
+        "-s", str(connections),
+        "-d", dest_dir,
+        "-o", filename,
+        "--continue=true",
+        "--auto-file-renaming=false",
+        "--allow-overwrite=true",
+        "--console-log-level=warn",
+        "--quiet=true",
+    ]
+    if auth_header_file:
+        cmd.append(f"--header=@{auth_header_file}")
+    cmd.append(url)
+    return cmd

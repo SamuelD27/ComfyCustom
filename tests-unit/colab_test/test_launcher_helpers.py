@@ -214,3 +214,48 @@ def test_write_auth_header_returns_none_for_empty_token(tmp_path):
     from colab.launcher_helpers import write_auth_header
     assert write_auth_header("", tmp_path) is None
     assert write_auth_header(None, tmp_path) is None
+
+
+def test_build_hf_download_cmd():
+    from colab.launcher_helpers import build_hf_download_cmd
+    cmd = build_hf_download_cmd(
+        repo="black-forest-labs/FLUX.2-dev",
+        filename="flux2-dev.safetensors",
+        dest_dir="/content/ComfyUI/models/diffusion_models",
+    )
+    assert cmd[0] == "hf"
+    assert cmd[1] == "download"
+    assert "black-forest-labs/FLUX.2-dev" in cmd
+    assert "flux2-dev.safetensors" in cmd
+    assert "--local-dir" in cmd
+    assert "/content/ComfyUI/models/diffusion_models" in cmd
+    assert "--max-workers" in cmd
+
+
+def test_build_aria2c_cmd_without_auth():
+    from colab.launcher_helpers import build_aria2c_cmd
+    cmd = build_aria2c_cmd(
+        url="https://example/file.safetensors",
+        dest_dir="/tmp/out",
+        filename="file.safetensors",
+    )
+    assert cmd[0] == "aria2c"
+    assert "-x" in cmd and "16" in cmd
+    assert "-s" in cmd and "16" in cmd
+    assert "-d" in cmd and "/tmp/out" in cmd
+    assert "-o" in cmd and "file.safetensors" in cmd
+    assert "https://example/file.safetensors" in cmd
+    assert not any("--header" in c for c in cmd)
+
+
+def test_build_aria2c_cmd_with_auth_header_file():
+    from colab.launcher_helpers import build_aria2c_cmd
+    cmd = build_aria2c_cmd(
+        url="https://civitai.com/api/download/models/1",
+        dest_dir="/tmp/out",
+        filename="x.safetensors",
+        auth_header_file="/tmp/auth.hdr",
+    )
+    assert "--header=@/tmp/auth.hdr" in cmd
+    # Quiet flags to avoid leaking the token via verbose error output
+    assert "--quiet=true" in cmd or any(c.startswith("--console-log-level") for c in cmd)
