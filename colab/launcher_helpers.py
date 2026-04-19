@@ -192,3 +192,24 @@ def pipeline_loras(registry: Dict[str, Any], key: str) -> List[Dict[str, Any]]:
     Raises KeyError if the pipeline key is not in the registry.
     """
     return list(registry["pipelines"][key].get("loras", []))
+
+
+__all__ += ["load_prefs", "save_prefs"]
+
+
+def load_prefs(path: "str | Path") -> Dict[str, Any]:
+    p = Path(path)
+    if not p.exists():
+        return {}
+    try:
+        with open(p) as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def save_prefs(path: "str | Path", prefs: Dict[str, Any]) -> None:
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with open(p, "w") as f:
+        json.dump(prefs, f, indent=2)

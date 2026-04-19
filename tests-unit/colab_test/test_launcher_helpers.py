@@ -171,3 +171,29 @@ def test_pipeline_models_raises_on_unknown_pipeline():
     import pytest as _pytest
     with _pytest.raises(KeyError):
         pipeline_models(reg, "does-not-exist")
+
+
+def test_load_prefs_returns_empty_dict_for_missing_file(tmp_path):
+    from colab.launcher_helpers import load_prefs
+    assert load_prefs(tmp_path / "nope.json") == {}
+
+
+def test_load_prefs_reads_existing_file(tmp_path):
+    from colab.launcher_helpers import load_prefs
+    p = tmp_path / "prefs.json"
+    p.write_text('{"pipelines": ["flux2-dev"], "loras": {}}')
+    assert load_prefs(p) == {"pipelines": ["flux2-dev"], "loras": {}}
+
+
+def test_load_prefs_returns_empty_on_invalid_json(tmp_path):
+    from colab.launcher_helpers import load_prefs
+    p = tmp_path / "prefs.json"
+    p.write_text("not json {")
+    assert load_prefs(p) == {}
+
+
+def test_save_prefs_creates_parent_dir(tmp_path):
+    from colab.launcher_helpers import save_prefs, load_prefs
+    target = tmp_path / "deep" / "path" / "prefs.json"
+    save_prefs(target, {"pipelines": ["z-image-turbo-6b"]})
+    assert load_prefs(target) == {"pipelines": ["z-image-turbo-6b"]}
