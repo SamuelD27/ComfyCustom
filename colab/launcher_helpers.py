@@ -153,7 +153,7 @@ def apply_hf_env(token: "str | None") -> None:
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 __all__ += ["load_registry", "list_pipelines", "pipeline_models", "pipeline_loras"]
 
@@ -186,5 +186,9 @@ def pipeline_models(registry: Dict[str, Any], key: str) -> List[Dict[str, Any]]:
 
 
 def pipeline_loras(registry: Dict[str, Any], key: str) -> List[Dict[str, Any]]:
-    """Return the lora spec list for a pipeline. Empty list if none. Raises KeyError if unknown."""
+    """Return the lora spec list for a pipeline.
+
+    Returns an empty list if the pipeline has no loras defined.
+    Raises KeyError if the pipeline key is not in the registry.
+    """
     return list(registry["pipelines"][key].get("loras", []))
