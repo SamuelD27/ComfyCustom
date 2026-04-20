@@ -22,16 +22,19 @@ If a secret is missing, the notebook falls back to a hidden `getpass` prompt in 
 
 ## How it works
 
-The notebook has eight numbered sections, run top-to-bottom:
+The notebook has three cells:
 
-1. Mount Drive (soft-fail if denied).
-2. GPU detect + conditional torch reinstall (auto-restart prompt if cu128 was needed).
-3. Load `HF_TOKEN` / `CIVITAI_TOKEN` into env vars.
-4. Install lightweight deps (`ipywidgets`, `aria2`, `huggingface_hub[cli]`).
-5. Clone this repo (or your fork) to `/content/ComfyUI`.
-6. Selector UI — pick pipelines (Flux 2 Dev, Z-Image Turbo 6B, Qwen Image Edit 2511, …) and per-pipeline LoRAs. Click **Launch**.
-7. Downloads weights using `hf` (HuggingFace) + `aria2c` (CivitAI), installs `requirements.txt`, starts `main.py`.
-8. Starts a `cloudflared` quick tunnel; the `https://*.trycloudflare.com` URL prints inline.
+1. **Cell 1 — Setup + selector.** Hardcoded tokens, GPU detect + conditional cu128 torch reinstall, clone repo to `/content/ComfyUI`, render pipeline + LoRA checkboxes. Click **Save selection**.
+2. **Cell 2 — Install + download + launch.** `uv pip` installs `requirements.txt` + enabled custom node reqs, `hf` + `aria2c` pull only the selected weights, workflow JSONs in `colab/workflows/` are copied into `user/default/workflows/`, `main.py` starts on port 8188, `cloudflared` prints the public `https://*.trycloudflare.com` URL.
+3. **Cell 3 — Restart.** Kills the running ComfyUI and relaunches it. No re-download, no re-install; the cloudflared tunnel stays up and the public URL is unchanged. Use this after editing workflows locally and pushing, or when ComfyUI crashed.
+
+### Why Cell 3 exists
+
+Cell 2 is expensive (≥ 15 min the first time) because of model downloads and dep installs. Cell 3 reuses everything on disk, so a restart takes ~10 s and keeps the same public URL. It also `git pull`s `colab/workflows/` by default (disable with `os.environ["COMFYUI_RESTART_PULL"] = "0"` before running it).
+
+### Workflows
+
+Workflow JSONs live in `colab/workflows/` inside the repo. ComfyUI's own `user/default/workflows/` is gitignored, so the launcher mirrors `colab/workflows/ → user/default/workflows/` on each run of Cell 2 or Cell 3. To add or edit a workflow, drop the JSON into `colab/workflows/` (mirroring the subdirectory layout), commit, push, and re-run Cell 3.
 
 ## Customising the repo URL
 
