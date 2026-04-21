@@ -124,6 +124,20 @@
           "size_gb": 0.316,
           "source": "civitai",
           "civitai_url": "https://civitai.com/api/download/models/2682864"
+        },
+        {
+          "filename": "phone-photography-2000-2025-klein9b.safetensors",
+          "display_name": "Phone Photography 2000-2025",
+          "size_gb": 0.158,
+          "source": "civitai",
+          "civitai_url": "https://civitai.com/api/download/models/2862425"
+        },
+        {
+          "filename": "ultimate-upscaler-klein9b.safetensors",
+          "display_name": "Ultimate Upscaler",
+          "size_gb": 0.237,
+          "source": "civitai",
+          "civitai_url": "https://civitai.com/api/download/models/2781657"
         }
       ]
     },
