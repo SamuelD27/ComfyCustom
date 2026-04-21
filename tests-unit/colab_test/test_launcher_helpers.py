@@ -203,7 +203,7 @@ def test_write_auth_header_creates_file_with_mode_0600(tmp_path):
     from colab.launcher_helpers import write_auth_header
     p = write_auth_header("token_abc", tmp_path)
     assert p.exists()
-    assert p.read_text() == "Authorization: Bearer token_abc\n"
+    assert p.read_text() == "header=Authorization: Bearer token_abc\n"
     # Owner-only permissions
     import stat as _stat
     mode = p.stat().st_mode & 0o777
@@ -254,9 +254,11 @@ def test_build_aria2c_cmd_with_auth_header_file():
         url="https://civitai.com/api/download/models/1",
         dest_dir="/tmp/out",
         filename="x.safetensors",
-        auth_header_file="/tmp/auth.hdr",
+        auth_header_file="/tmp/auth.conf",
     )
-    assert "--header=@/tmp/auth.hdr" in cmd
+    assert "--conf-path=/tmp/auth.conf" in cmd
+    # aria2c's --header does NOT support curl-style @file; must use --conf-path
+    assert not any(c.startswith("--header=@") for c in cmd)
     # Quiet flags to avoid leaking the token via verbose error output
     assert "--quiet=true" in cmd or any(c.startswith("--console-log-level") for c in cmd)
 

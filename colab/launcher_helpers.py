@@ -220,7 +220,11 @@ __all__ += ["write_auth_header"]
 
 
 def write_auth_header(token: "str | None", tmp_dir: "str | Path") -> "Path | None":
-    """Write an 'Authorization: Bearer <token>' header file (mode 0600).
+    """Write an aria2c conf file carrying the bearer auth header (mode 0600).
+
+    Format is aria2c's conf-file syntax (one option per line, ``option=value``)
+    so the file can be passed as ``--conf-path=<file>``. aria2c's ``--header``
+    does NOT support curl-style ``@file`` expansion.
 
     Returns the Path of the file, or None if no token was supplied.
     """
@@ -228,10 +232,10 @@ def write_auth_header(token: "str | None", tmp_dir: "str | Path") -> "Path | Non
         return None
     d = Path(tmp_dir)
     d.mkdir(parents=True, exist_ok=True)
-    fd, name = tempfile.mkstemp(prefix="auth_", suffix=".hdr", dir=str(d))
+    fd, name = tempfile.mkstemp(prefix="auth_", suffix=".conf", dir=str(d))
     try:
         with os.fdopen(fd, "w") as f:
-            f.write(f"Authorization: Bearer {token}\n")
+            f.write(f"header=Authorization: Bearer {token}\n")
     except Exception:
         try:
             os.unlink(name)
@@ -296,7 +300,7 @@ def build_aria2c_cmd(
         url: Full download URL (HTTP/HTTPS).
         dest_dir: Destination directory for the downloaded file.
         filename: Output filename.
-        auth_header_file: Path to file containing "Authorization: Bearer <token>"
+        auth_header_file: Path to aria2c conf file carrying the auth header
                          (created by write_auth_header). Optional.
         connections: Number of parallel connections (default 16).
 
@@ -316,6 +320,6 @@ def build_aria2c_cmd(
         "--quiet=true",
     ]
     if auth_header_file:
-        cmd.append(f"--header=@{auth_header_file}")
+        cmd.append(f"--conf-path={auth_header_file}")
     cmd.append(url)
     return cmd
