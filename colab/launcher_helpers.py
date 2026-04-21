@@ -285,6 +285,74 @@ def build_hf_download_cmd(
     ]
 
 
+_CIVITAI_DOWNLOAD_RX = re.compile(r"^https?://civitai\.com/api/download/", re.IGNORECASE)
+
+
+def _read_bearer_from_conf(path: "str | Path | None") -> "str | None":
+    """Extract the Bearer token from an aria2c auth conf file written by
+    write_auth_header. Returns None if the file is missing or malformed."""
+    if not path:
+        return None
+    try:
+        for line in Path(path).read_text().splitlines():
+            s = line.strip()
+            if not s.startswith("header="):
+                continue
+            hdr = s[len("header="):]
+            if ":" not in hdr:
+                continue
+            name, value = hdr.split(":", 1)
+            if name.strip().lower() != "authorization":
+                continue
+            value = value.strip()
+            if value.lower().startswith("bearer "):
+                return value[7:].strip()
+    except OSError:
+        pass
+    return None
+
+
+def _resolve_civitai_redirect(
+    url: str, token: "str | None", timeout: float = 30.0
+) -> str:
+    """Resolve a CivitAI /api/download/... URL to its signed B2 URL.
+
+    CivitAI issues a 302 to a Backblaze B2 URL whose auth is embedded in the
+    query-string ``?Authorization=...`` signature. If aria2c carries the
+    ``Authorization: Bearer <civitai-token>`` header across the redirect
+    (as it does by default), B2 rejects the request with 403 due to the
+    conflicting header/query auth. Resolving the redirect ourselves and
+    fetching the signed URL with no header avoids the conflict.
+    """
+    import urllib.request
+    import urllib.error
+
+    class _Catcher(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            raise urllib.error.HTTPError(req.full_url, code, msg, headers, fp)
+
+    req = urllib.request.Request(url)
+    # CivitAI rejects Python-urllib's default User-Agent with 403. Use a
+    # generic browser UA to match what curl/aria2c send.
+    req.add_header(
+        "User-Agent",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    )
+    if token:
+        req.add_header("Authorization", f"Bearer {token}")
+    opener = urllib.request.build_opener(_Catcher)
+    try:
+        with opener.open(req, timeout=timeout):
+            return url  # No redirect issued — pass through original URL.
+    except urllib.error.HTTPError as e:
+        if e.code in (301, 302, 303, 307, 308):
+            loc = e.headers.get("Location")
+            if loc:
+                return loc
+        raise
+
+
 def build_aria2c_cmd(
     url: str,
     dest_dir: str,
@@ -295,6 +363,12 @@ def build_aria2c_cmd(
     """Build argv for aria2c download command.
 
     Configures aria2c for fast parallel downloads with optional authentication.
+
+    For CivitAI /api/download/... URLs, the 302 redirect is resolved here
+    (using the Bearer token parsed from ``auth_header_file`` if present) and
+    the Authorization header is dropped before aria2c runs, because B2 (the
+    redirect target) signs its URLs in the query string and rejects requests
+    that also carry a conflicting ``Authorization:`` header.
 
     Args:
         url: Full download URL (HTTP/HTTPS).
@@ -307,6 +381,11 @@ def build_aria2c_cmd(
     Returns:
         List of command arguments ready for subprocess.run().
     """
+    if _CIVITAI_DOWNLOAD_RX.match(url):
+        token = _read_bearer_from_conf(auth_header_file)
+        url = _resolve_civitai_redirect(url, token)
+        auth_header_file = None
+
     cmd = [
         "aria2c",
         "-x", str(connections),

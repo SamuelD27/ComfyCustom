@@ -251,7 +251,7 @@ def test_build_aria2c_cmd_without_auth():
 def test_build_aria2c_cmd_with_auth_header_file():
     from colab.launcher_helpers import build_aria2c_cmd
     cmd = build_aria2c_cmd(
-        url="https://civitai.com/api/download/models/1",
+        url="https://example.com/file.safetensors",
         dest_dir="/tmp/out",
         filename="x.safetensors",
         auth_header_file="/tmp/auth.conf",
@@ -261,6 +261,70 @@ def test_build_aria2c_cmd_with_auth_header_file():
     assert not any(c.startswith("--header=@") for c in cmd)
     # Quiet flags to avoid leaking the token via verbose error output
     assert "--quiet=true" in cmd or any(c.startswith("--console-log-level") for c in cmd)
+
+
+def test_build_aria2c_cmd_resolves_civitai_redirect(monkeypatch, tmp_path):
+    """CivitAI /api/download/ URLs must be resolved to the signed B2 URL,
+    with no Authorization header forwarded (B2 signs via query string)."""
+    import colab.launcher_helpers as lh
+
+    signed = "https://b2.civitai.com/file/signed?Authorization=SIG"
+    seen = {}
+
+    def fake_resolve(url, token, timeout=30.0):
+        seen["url"] = url
+        seen["token"] = token
+        return signed
+
+    monkeypatch.setattr(lh, "_resolve_civitai_redirect", fake_resolve)
+
+    auth = tmp_path / "auth.conf"
+    auth.write_text("header=Authorization: Bearer tok_123\n")
+
+    cmd = lh.build_aria2c_cmd(
+        url="https://civitai.com/api/download/models/1",
+        dest_dir="/tmp/out",
+        filename="x.safetensors",
+        auth_header_file=str(auth),
+    )
+    assert seen["url"] == "https://civitai.com/api/download/models/1"
+    assert seen["token"] == "tok_123"
+    assert signed in cmd
+    # Must NOT forward Authorization — would cause 403 from B2
+    assert not any(c.startswith("--conf-path") for c in cmd)
+    assert not any(c.startswith("--header") for c in cmd)
+
+
+def test_build_aria2c_cmd_non_civitai_url_unchanged(monkeypatch):
+    """Non-CivitAI URLs must not trigger network redirect resolution."""
+    import colab.launcher_helpers as lh
+
+    def boom(*a, **kw):
+        raise AssertionError("redirect resolver should not be called for non-CivitAI URLs")
+
+    monkeypatch.setattr(lh, "_resolve_civitai_redirect", boom)
+    cmd = lh.build_aria2c_cmd(
+        url="https://huggingface.co/foo/bar/resolve/main/file.safetensors",
+        dest_dir="/tmp/out",
+        filename="x.safetensors",
+    )
+    assert "https://huggingface.co/foo/bar/resolve/main/file.safetensors" in cmd
+
+
+def test_read_bearer_from_conf_extracts_token(tmp_path):
+    from colab.launcher_helpers import _read_bearer_from_conf
+    p = tmp_path / "auth.conf"
+    p.write_text("header=Authorization: Bearer abc_123\n")
+    assert _read_bearer_from_conf(p) == "abc_123"
+
+
+def test_read_bearer_from_conf_handles_missing_and_malformed(tmp_path):
+    from colab.launcher_helpers import _read_bearer_from_conf
+    assert _read_bearer_from_conf(None) is None
+    assert _read_bearer_from_conf(tmp_path / "nope.conf") is None
+    bad = tmp_path / "bad.conf"
+    bad.write_text("header=X-Foo: bar\n")
+    assert _read_bearer_from_conf(bad) is None
 
 
 def test_extract_trycloudflare_url_positive_match():
